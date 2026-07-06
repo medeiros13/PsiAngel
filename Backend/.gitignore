@@ -1,0 +1,28 @@
+# /Backend/.gitignore
+
+# Pastas de build do .NET
+bin/
+obj/
+
+# Arquivos de configuração locais e segredos
+appsettings.json
+appsettings.Development.json
+appsettings.Production.json
+appsettings.*.json
+
+# Visual Studio (Caches e configurações de usuário)
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Arquivos de log e banco local (se houver)
+*.log
+*.db
+
+# Ferramentas de IA e Agentes (Copilot, Antigravity, etc.)
+.antigravity/
+.antigravity.*
+.copilot/
+*.agignore

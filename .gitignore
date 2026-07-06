@@ -1,0 +1,12 @@
+# /.gitignore (Raiz do projeto)
+
+# Arquivo de credenciais locais do Docker / Ambiente Global
+.env
+.env.local
+
+# Configurações locais de IDEs na raiz (caso abra a pasta pai no VS Code)
+.vscode/
+.vs/
+
+# Logs globais
+*.log
