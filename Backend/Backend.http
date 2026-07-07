@@ -1,6 +1,104 @@
 @Backend_HostAddress = http://localhost:5287
 
-GET {{Backend_HostAddress}}/weatherforecast/
+# ==========================================
+// Patients API
+// ==========================================
+
+### Get All Patients
+GET {{Backend_HostAddress}}/api/patients
 Accept: application/json
 
-###
+### Create a Patient
+# @name createPatient
+POST {{Backend_HostAddress}}/api/patients
+Content-Type: application/json
+
+{
+  "fullName": "Jane Doe",
+  "email": "jane.doe@example.com",
+  "phone": "+1234567890",
+  "dateOfBirth": "1990-05-15T00:00:00Z",
+  "cpf": "123.456.789-00",
+  "treatmentStartDate": "2026-07-06T00:00:00Z",
+  "gender": "Female",
+  "profession": "Software Engineer",
+  "countryOfResidence": "Brazil",
+  "frequency": "Semanal",
+  "primaryEmergencyContact": "John Doe - +1234567891",
+  "secondaryEmergencyContact": null
+}
+
+### Get Patient by ID (Replace with ID returned from Create Patient)
+@patientId = {{createPatient.response.body.id}}
+GET {{Backend_HostAddress}}/api/patients/{{patientId}}
+Accept: application/json
+
+### Update Patient
+PUT {{Backend_HostAddress}}/api/patients/{{patientId}}
+Content-Type: application/json
+
+{
+  "fullName": "Jane Doe Updated",
+  "email": "jane.doe.updated@example.com",
+  "phone": "+9876543210",
+  "dateOfBirth": "1990-05-15T00:00:00Z",
+  "cpf": "123.456.789-00",
+  "treatmentStartDate": "2026-07-06T00:00:00Z",
+  "gender": "Female",
+  "profession": "Senior Software Engineer",
+  "countryOfResidence": "Brazil",
+  "frequency": "Quinzenal",
+  "primaryEmergencyContact": "John Doe - +1234567891",
+  "secondaryEmergencyContact": null
+}
+
+### Delete Patient
+DELETE {{Backend_HostAddress}}/api/patients/{{patientId}}
+
+# ==========================================
+// Therapy Sessions API
+// ==========================================
+
+### Get All Therapy Sessions
+GET {{Backend_HostAddress}}/api/therapy-sessions
+Accept: application/json
+
+### Create a Therapy Session (Requires a valid patientId, e.g. from createPatient above)
+# @name createSession
+POST {{Backend_HostAddress}}/api/therapy-sessions
+Content-Type: application/json
+
+{
+  "patientId": "{{patientId}}",
+  "sessionStart": "2026-07-07T14:00:00Z",
+  "expectedSessionEnd": "2026-07-07T15:00:00Z",
+  "eventColor": "blue",
+  "confirmed": false,
+  "notes": "Initial consultation and context gathering.",
+  "medicalRecordHistory": "No previous psychiatric records.",
+  "audioRecordingPath": null
+}
+
+### Get Therapy Session by ID
+@sessionId = {{createSession.response.body.id}}
+GET {{Backend_HostAddress}}/api/therapy-sessions/{{sessionId}}
+Accept: application/json
+
+### Update Therapy Session
+PUT {{Backend_HostAddress}}/api/therapy-sessions/{{sessionId}}
+Content-Type: application/json
+
+{
+  "patientId": "{{patientId}}",
+  "sessionStart": "2026-07-07T14:30:00Z",
+  "expectedSessionEnd": "2026-07-07T15:30:00Z",
+  "eventColor": "green",
+  "confirmed": true,
+  "notes": "Initial consultation completed. Shifted start time by 30 mins.",
+  "medicalRecordHistory": "No previous psychiatric records.",
+  "audioRecordingPath": "/recordings/session_01.mp3"
+}
+
+### Delete Therapy Session
+DELETE {{Backend_HostAddress}}/api/therapy-sessions/{{sessionId}}
+
