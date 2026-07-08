@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Backend.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialSetup : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -25,13 +25,33 @@ namespace Backend.Migrations
                     Gender = table.Column<string>(type: "text", nullable: false),
                     Profession = table.Column<string>(type: "text", nullable: false),
                     CountryOfResidence = table.Column<string>(type: "text", nullable: false),
-                    Frequency = table.Column<string>(type: "text", nullable: false),
-                    PrimaryEmergencyContact = table.Column<string>(type: "text", nullable: true),
-                    SecondaryEmergencyContact = table.Column<string>(type: "text", nullable: true)
+                    Frequency = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Patients", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "EmergencyContact",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    PhoneNumber = table.Column<string>(type: "text", nullable: false),
+                    Email = table.Column<string>(type: "text", nullable: true),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    PatientId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_EmergencyContact", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_EmergencyContact_Patients_PatientId",
+                        column: x => x.PatientId,
+                        principalTable: "Patients",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -60,6 +80,11 @@ namespace Backend.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_EmergencyContact_PatientId",
+                table: "EmergencyContact",
+                column: "PatientId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_TherapySessions_PatientId",
                 table: "TherapySessions",
                 column: "PatientId");
@@ -68,6 +93,9 @@ namespace Backend.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "EmergencyContact");
+
             migrationBuilder.DropTable(
                 name: "TherapySessions");
 

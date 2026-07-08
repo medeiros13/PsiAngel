@@ -22,6 +22,36 @@ namespace Backend.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Backend.Models.EmergencyContact", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PatientId");
+
+                    b.ToTable("EmergencyContact");
+                });
+
             modelBuilder.Entity("Backend.Models.Patient", b =>
                 {
                     b.Property<Guid>("Id")
@@ -42,9 +72,8 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Frequency")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Frequency")
+                        .HasColumnType("integer");
 
                     b.Property<string>("FullName")
                         .IsRequired()
@@ -58,14 +87,8 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("PrimaryEmergencyContact")
-                        .HasColumnType("text");
-
                     b.Property<string>("Profession")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("SecondaryEmergencyContact")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("TreatmentStartDate")
@@ -114,6 +137,17 @@ namespace Backend.Migrations
                     b.ToTable("TherapySessions");
                 });
 
+            modelBuilder.Entity("Backend.Models.EmergencyContact", b =>
+                {
+                    b.HasOne("Backend.Models.Patient", "Patient")
+                        .WithMany("EmergencyContacts")
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
+                });
+
             modelBuilder.Entity("Backend.Models.TherapySession", b =>
                 {
                     b.HasOne("Backend.Models.Patient", "Patient")
@@ -123,6 +157,11 @@ namespace Backend.Migrations
                         .IsRequired();
 
                     b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("Backend.Models.Patient", b =>
+                {
+                    b.Navigation("EmergencyContacts");
                 });
 #pragma warning restore 612, 618
         }

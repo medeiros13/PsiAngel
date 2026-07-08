@@ -59,7 +59,7 @@ app.MapPut("/api/patients/{id:guid}", async (Guid id, Patient inputPatient, AppD
 
     patient.FullName = inputPatient.FullName;
     patient.Email = inputPatient.Email;
-    patient.Phone = inputPatient.Phone;
+    patient.PhoneNumber = inputPatient.PhoneNumber;
     patient.DateOfBirth = inputPatient.DateOfBirth;
     patient.Cpf = inputPatient.Cpf;
     patient.TreatmentStartDate = inputPatient.TreatmentStartDate;
@@ -67,8 +67,7 @@ app.MapPut("/api/patients/{id:guid}", async (Guid id, Patient inputPatient, AppD
     patient.Profession = inputPatient.Profession;
     patient.CountryOfResidence = inputPatient.CountryOfResidence;
     patient.Frequency = inputPatient.Frequency;
-    patient.PrimaryEmergencyContact = inputPatient.PrimaryEmergencyContact;
-    patient.SecondaryEmergencyContact = inputPatient.SecondaryEmergencyContact;
+    patient.EmergencyContacts = inputPatient.EmergencyContacts;
 
     await db.SaveChangesAsync();
     return Results.NoContent();
