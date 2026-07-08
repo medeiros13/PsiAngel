@@ -16,16 +16,21 @@ Content-Type: application/json
 {
   "fullName": "Jane Doe",
   "email": "jane.doe@example.com",
-  "phone": "+1234567890",
+  "phoneNumber": "+1234567890",
   "dateOfBirth": "1990-05-15T00:00:00Z",
   "cpf": "123.456.789-00",
   "treatmentStartDate": "2026-07-06T00:00:00Z",
   "gender": "Female",
   "profession": "Software Engineer",
   "countryOfResidence": "Brazil",
-  "frequency": "Semanal",
-  "primaryEmergencyContact": "John Doe - +1234567891",
-  "secondaryEmergencyContact": null
+  "frequency": "Weekly",
+  "emergencyContacts": [
+    {
+      "name": "John Doe",
+      "phoneNumber": "+1234567891",
+      "type": "Primary"
+    }
+  ]
 }
 
 ### Get Patient by ID (Replace with ID returned from Create Patient)
@@ -40,16 +45,21 @@ Content-Type: application/json
 {
   "fullName": "Jane Doe Updated",
   "email": "jane.doe.updated@example.com",
-  "phone": "+9876543210",
+  "phoneNumber": "+9876543210",
   "dateOfBirth": "1990-05-15T00:00:00Z",
   "cpf": "123.456.789-00",
   "treatmentStartDate": "2026-07-06T00:00:00Z",
   "gender": "Female",
   "profession": "Senior Software Engineer",
   "countryOfResidence": "Brazil",
-  "frequency": "Quinzenal",
-  "primaryEmergencyContact": "John Doe - +1234567891",
-  "secondaryEmergencyContact": null
+  "frequency": "BiWeekly",
+  "emergencyContacts": [
+    {
+      "name": "John Doe Updated",
+      "phoneNumber": "+9876543211",
+      "type": "Primary"
+    }
+  ]
 }
 
 ### Delete Patient

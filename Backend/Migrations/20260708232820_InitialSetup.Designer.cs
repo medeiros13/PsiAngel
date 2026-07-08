@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260708230326_InitialSetup")]
+    [Migration("20260708232820_InitialSetup")]
     partial class InitialSetup
     {
         /// <inheritdoc />
@@ -45,6 +45,9 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("SocialName")
+                        .HasColumnType("text");
+
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
@@ -62,7 +65,6 @@ namespace Backend.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("CountryOfResidence")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Cpf")
@@ -72,7 +74,6 @@ namespace Backend.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("Frequency")
@@ -82,16 +83,17 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Gender")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Gender")
+                        .HasColumnType("integer");
 
-                    b.Property<string>("Phone")
+                    b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Profession")
-                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SocialName")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("TreatmentStartDate")

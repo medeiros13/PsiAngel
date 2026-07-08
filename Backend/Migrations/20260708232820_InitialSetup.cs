@@ -17,14 +17,15 @@ namespace Backend.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     FullName = table.Column<string>(type: "text", nullable: false),
-                    Email = table.Column<string>(type: "text", nullable: false),
-                    Phone = table.Column<string>(type: "text", nullable: false),
+                    SocialName = table.Column<string>(type: "text", nullable: true),
+                    Email = table.Column<string>(type: "text", nullable: true),
+                    PhoneNumber = table.Column<string>(type: "text", nullable: false),
                     DateOfBirth = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Cpf = table.Column<string>(type: "text", nullable: true),
                     TreatmentStartDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Gender = table.Column<string>(type: "text", nullable: false),
-                    Profession = table.Column<string>(type: "text", nullable: false),
-                    CountryOfResidence = table.Column<string>(type: "text", nullable: false),
+                    Gender = table.Column<int>(type: "integer", nullable: false),
+                    Profession = table.Column<string>(type: "text", nullable: true),
+                    CountryOfResidence = table.Column<string>(type: "text", nullable: true),
                     Frequency = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -38,6 +39,7 @@ namespace Backend.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
+                    SocialName = table.Column<string>(type: "text", nullable: true),
                     PhoneNumber = table.Column<string>(type: "text", nullable: false),
                     Email = table.Column<string>(type: "text", nullable: true),
                     Type = table.Column<int>(type: "integer", nullable: false),

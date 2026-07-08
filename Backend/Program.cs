@@ -13,6 +13,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -31,11 +36,11 @@ app.UseHttpsRedirection();
 // ==========================================
 
 app.MapGet("/api/patients", async (AppDbContext db) =>
-    await db.Patients.ToListAsync())
+    await db.Patients.Include(p => p.EmergencyContacts).ToListAsync())
     .WithName("GetPatients");
 
 app.MapGet("/api/patients/{id:guid}", async (Guid id, AppDbContext db) =>
-    await db.Patients.FindAsync(id) is Patient patient
+    await db.Patients.Include(p => p.EmergencyContacts).FirstOrDefaultAsync(p => p.Id == id) is Patient patient
         ? Results.Ok(patient)
         : Results.NotFound())
     .WithName("GetPatientById");
@@ -46,6 +51,16 @@ app.MapPost("/api/patients", async (Patient patient, AppDbContext db) =>
 
     patient.TreatmentStartDate = patient.TreatmentStartDate.ToUniversalTime();
     patient.DateOfBirth = patient.DateOfBirth.ToUniversalTime();
+
+    if (patient.EmergencyContacts != null)
+    {
+        foreach (var contact in patient.EmergencyContacts)
+        {
+            contact.Id = Guid.NewGuid();
+            contact.PatientId = patient.Id;
+        }
+    }
+
     db.Patients.Add(patient);
     await db.SaveChangesAsync();
     return Results.Created($"/api/patients/{patient.Id}", patient);
@@ -54,20 +69,67 @@ app.MapPost("/api/patients", async (Patient patient, AppDbContext db) =>
 
 app.MapPut("/api/patients/{id:guid}", async (Guid id, Patient inputPatient, AppDbContext db) =>
 {
-    var patient = await db.Patients.FindAsync(id);
+    var patient = await db.Patients.Include(p => p.EmergencyContacts).FirstOrDefaultAsync(p => p.Id == id);
     if (patient is null) return Results.NotFound();
 
     patient.FullName = inputPatient.FullName;
+    patient.SocialName = inputPatient.SocialName;
     patient.Email = inputPatient.Email;
     patient.PhoneNumber = inputPatient.PhoneNumber;
-    patient.DateOfBirth = inputPatient.DateOfBirth;
+    patient.DateOfBirth = inputPatient.DateOfBirth.ToUniversalTime();
     patient.Cpf = inputPatient.Cpf;
-    patient.TreatmentStartDate = inputPatient.TreatmentStartDate;
+    patient.TreatmentStartDate = inputPatient.TreatmentStartDate.ToUniversalTime();
     patient.Gender = inputPatient.Gender;
     patient.Profession = inputPatient.Profession;
     patient.CountryOfResidence = inputPatient.CountryOfResidence;
     patient.Frequency = inputPatient.Frequency;
-    patient.EmergencyContacts = inputPatient.EmergencyContacts;
+
+    // Update emergency contacts robustly
+    var existingContacts = patient.EmergencyContacts.ToList();
+    var incomingContacts = inputPatient.EmergencyContacts ?? new List<EmergencyContact>();
+
+    // 1. Remove contacts not in the incoming list
+    foreach (var existing in existingContacts)
+    {
+        if (!incomingContacts.Any(c => c.Id == existing.Id))
+        {
+            patient.EmergencyContacts.Remove(existing);
+        }
+    }
+
+    // 2. Add or update incoming contacts
+    foreach (var incoming in incomingContacts)
+    {
+        if (incoming.Id == Guid.Empty)
+        {
+            // Add new contact
+            var newContact = new EmergencyContact
+            {
+                Id = Guid.NewGuid(),
+                Name = incoming.Name,
+                SocialName = incoming.SocialName,
+                PhoneNumber = incoming.PhoneNumber,
+                Email = incoming.Email,
+                Type = incoming.Type,
+                PatientId = patient.Id
+            };
+            patient.EmergencyContacts.Add(newContact);
+            db.Entry(newContact).State = EntityState.Added;
+        }
+        else
+        {
+            // Update existing contact
+            var existing = patient.EmergencyContacts.FirstOrDefault(c => c.Id == incoming.Id);
+            if (existing != null)
+            {
+                existing.Name = incoming.Name;
+                existing.SocialName = incoming.SocialName;
+                existing.PhoneNumber = incoming.PhoneNumber;
+                existing.Email = incoming.Email;
+                existing.Type = incoming.Type;
+            }
+        }
+    }
 
     await db.SaveChangesAsync();
     return Results.NoContent();

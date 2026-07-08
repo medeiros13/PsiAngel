@@ -1,4 +1,6 @@
-﻿namespace Backend.Models
+using System.Text.Json.Serialization;
+
+namespace Backend.Models
 {
     public class EmergencyContact
     {
@@ -9,6 +11,8 @@
         public string? Email { get; set; }
         public ContactType Type { get; set; }
         public Guid PatientId { get; set; }
+
+        [JsonIgnore]
         public Patient? Patient { get; set; }
     }
 }
