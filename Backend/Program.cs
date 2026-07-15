@@ -10,6 +10,7 @@ var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", ".env.local");
 if (File.Exists(envPath))
 {
     Env.Load(envPath);
+    builder.Configuration.AddEnvironmentVariables();
 }
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
