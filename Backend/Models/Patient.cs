@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Backend.Models;
 
 public enum Gender
@@ -22,4 +24,7 @@ public class Patient
     public string? CountryOfResidence { get; set; }
     public PatientFrequency Frequency { get; set; }
     public ICollection<EmergencyContact> EmergencyContacts { get; set; } = [];
+    public Guid PsychologistId { get; set; }
+    [JsonIgnore]
+    public Psychologist? Psychologist { get; set; }
 }

@@ -28,5 +28,23 @@ public class AppDbContext : DbContext
             .WithMany(p => p.EmergencyContacts)
             .HasForeignKey(c => c.PatientId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Patient>()
+            .HasOne(p => p.Psychologist)
+            .WithMany()
+            .HasForeignKey(p => p.PsychologistId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<TherapySession>()
+            .HasOne(ts => ts.Patient)
+            .WithMany()
+            .HasForeignKey(ts => ts.PatientId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TherapySession>()
+            .HasOne(ts => ts.Psychologist)
+            .WithMany()
+            .HasForeignKey(ts => ts.PsychologistId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
