@@ -2,6 +2,6 @@
 {
     public class GoogleLoginRequestDto
     {
-        public required string Code { get; set; }
+        public required string Credential { get; set; }
     }
 }

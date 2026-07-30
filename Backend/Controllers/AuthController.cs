@@ -23,7 +23,7 @@ namespace Backend.Controllers
             _httpClient = new HttpClient();
         }
 
-        [HttpPost("google")]
+        [HttpPost("google-login")]
         public async Task<ActionResult> GoogleLogin([FromBody] GoogleLoginRequestDto request)
         {
             var clientId = _configuration["VITE_GOOGLE_CLIENT_ID"];
@@ -32,7 +32,7 @@ namespace Backend.Controllers
             if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret))
                 return StatusCode(500, "Configuração do Google OAuth ausente no servidor.");
 
-            var tokenResponse = await ExchangeCodeForTokensAsync(request.Code, clientId, clientSecret);
+            var tokenResponse = await ExchangeCodeForTokensAsync(request.Credential, clientId, clientSecret);
 
             if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.AccessToken))
                 return BadRequest("Falha ao trocar o código de autorização do Google.");
@@ -58,28 +58,6 @@ namespace Backend.Controllers
             return Ok(new { Message = "Login realizado com sucesso", PsychologistId = psychologist.Id });
         }
 
-        private async Task<GoogleTokenResponse?> ExchangeCodeForTokensAsync(string code, string clientId, string clientSecret)
-        {
-            var values = new Dictionary<string, string>
-            {
-                { "client_id", clientId },
-                { "client_secret", clientSecret },
-                { "code", code },
-                { "grant_type", "authorization_code" },
-                { "redirect_uri", "postmessage" }
-            };
-
-            var content = new FormUrlEncodedContent(values);
-            var response = await _httpClient.PostAsync("https://oauth2.googleapis.com/token", content);
-
-            if (!response.IsSuccessStatusCode)
-                return null;
-
-            var json = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<GoogleTokenResponse>(json);
-
-        }
-
         private async Task<GoogleUserInfo?> GetGoogleUserInfoAsync(string accessToken)
         {
             _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
@@ -90,6 +68,36 @@ namespace Backend.Controllers
 
             var json = await response.Content.ReadAsStringAsync();
             return JsonConvert.DeserializeObject<GoogleUserInfo>(json);
+        }
+
+        public async Task<GoogleTokenResponse> ExchangeCodeForTokensAsync(string authCode, string clientId, string clientSecret)
+        {
+            using var httpClient = new HttpClient();
+
+            var values = new Dictionary<string, string>
+            {
+                { "code", authCode },
+                { "client_id", clientId },
+                { "client_secret", clientSecret },
+                { "redirect_uri", "postmessage" },
+                { "grant_type", "authorization_code" }
+            };
+
+            var content = new FormUrlEncodedContent(values);
+
+            // Faz a requisição para o Google
+            var response = await httpClient.PostAsync("https://oauth2.googleapis.com/token", content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                // Se ainda der erro, o responseContent vai detalhar o motivo exato!
+                throw new HttpRequestException($"Erro do Google: {responseContent}");
+            }
+
+            // Mapeia o JSON retornado para uma classe C#
+            var tokenData = JsonConvert.DeserializeObject<GoogleTokenResponse>(responseContent);
+            return tokenData;
         }
     }
 }

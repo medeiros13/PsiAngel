@@ -1,44 +1,39 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useState, type ReactNode } from 'react';
+import { ENV } from '../config/env';
 
-// Definimos o que o nosso contexto vai fornecer para o resto da aplicação
+// 1. Tipagem para ajudar o VS Code (e você) a saber o que tem dentro do Contexto
 interface AuthContextType {
-    isAuthenticated: boolean;
-    login: (token: string) => void;
-    logout: () => void;
+    user: any; // Usaremos 'any' por enquanto, até desenharmos a entidade no C#
+    login: (code: string) => Promise<void>;
 }
 
-// Criação do Contexto
-const AuthContext = createContext<AuthContextType | null>(null);
+export const AuthContext = createContext<AuthContextType | null>(null);
 
-// O Provider é o componente que vai "envelopar" nossa aplicação
-export function AuthProvider({ children }: { children: ReactNode }) {
-    // Ao iniciar a aplicação, tentamos ler o token do LocalStorage do navegador.
-    // Isso é o que garante que o F5 não deslogue o usuário.
-    const [token, setToken] = useState<string | null>(localStorage.getItem('@PsiAngel:token'));
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+    const [user, setUser] = useState(null);
 
-    const login = (newToken: string) => {
-        localStorage.setItem('@PsiAngel:token', newToken); // Salva no navegador
-        setToken(newToken); // Atualiza o estado da aplicação
+    const login = async (code: string) => {
+        // Envia o Authorization Code para a nossa API C#
+        const response = await fetch(`${ENV.API_URL}/auth/google-login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ credential: code }), // Mandamos como um objeto JSON
+        });
+
+        if (!response.ok) {
+            // Se o backend retornar 400 ou 500, estouramos um erro para o LoginPage capturar
+            throw new Error('Falha na autenticação com o backend');
+        }
+
+        const data = await response.json();
+        setUser(data);
     };
 
-    const logout = () => {
-        localStorage.removeItem('@PsiAngel:token'); // Remove do navegador
-        setToken(null);
-    };
-
-    // Fornecemos essas funções e a variável isAuthenticated para a aplicação
     return (
-        <AuthContext.Provider value={{ isAuthenticated: !!token, login, logout }}>
+        <AuthContext.Provider value={{ user, login }}>
             {children}
         </AuthContext.Provider>
     );
-}
-
-// Hook customizado para facilitar o uso nos outros componentes
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth deve ser usado dentro de um AuthProvider');
-    }
-    return context;
 };
