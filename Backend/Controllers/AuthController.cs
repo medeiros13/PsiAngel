@@ -1,10 +1,14 @@
-﻿using Backend.Models;
+using Backend.Models;
 using Backend.Models.DTOs;
 using Backend.Models.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
-using System.Text.Json;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace Backend.Controllers
 {
@@ -55,7 +59,48 @@ namespace Backend.Controllers
 
             await _context.SaveChangesAsync();
 
+            var jwt = GenerateJwtToken(psychologist);
+            Response.Cookies.Append("jwt", jwt, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddDays(7)
+            });
+
             return Ok(new { Message = "Login realizado com sucesso", PsychologistId = psychologist.Id });
+        }
+
+        [HttpGet("me")]
+        [Authorize]
+        public async Task<ActionResult> GetMe()
+        {
+            var psychologistIdStr = User.FindFirstValue("PsychologistId") ?? User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            
+            if (string.IsNullOrEmpty(psychologistIdStr) || !Guid.TryParse(psychologistIdStr, out var psychologistId))
+                return Unauthorized();
+
+            var psychologist = await _context.Psychologists.FindAsync(psychologistId);
+            if (psychologist == null) return NotFound();
+
+            return Ok(new { 
+                Id = psychologist.Id,
+                Name = psychologist.Name,
+                Email = psychologist.Email,
+                PictureUrl = psychologist.PictureUrl 
+            });
+        }
+
+        [HttpPost("logout")]
+        public ActionResult Logout()
+        {
+            Response.Cookies.Delete("jwt", new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None
+            });
+            return Ok(new { Message = "Logout realizado com sucesso" });
         }
 
         private async Task<GoogleUserInfo?> GetGoogleUserInfoAsync(string accessToken)
@@ -98,6 +143,33 @@ namespace Backend.Controllers
             // Mapeia o JSON retornado para uma classe C#
             var tokenData = JsonConvert.DeserializeObject<GoogleTokenResponse>(responseContent);
             return tokenData;
+        }
+
+        private string GenerateJwtToken(Psychologist psychologist)
+        {
+            var jwtKey = _configuration["JWT_SECRET"] ?? Environment.GetEnvironmentVariable("JWT_SECRET");
+            var issuer = _configuration["JWT_ISSUER"] ?? Environment.GetEnvironmentVariable("JWT_ISSUER");
+            var audience = _configuration["JWT_AUDIENCE"] ?? Environment.GetEnvironmentVariable("JWT_AUDIENCE");
+
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey ?? throw new InvalidOperationException("JWT_SECRET is missing")));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, psychologist.Id.ToString()),
+                new Claim(JwtRegisteredClaimNames.Email, psychologist.Email),
+                new Claim(JwtRegisteredClaimNames.Name, psychologist.Name),
+                new Claim("PsychologistId", psychologist.Id.ToString())
+            };
+
+            var token = new JwtSecurityToken(
+                issuer: issuer ?? "PsiAngelIssuer",
+                audience: audience ?? "PsiAngelAudience",
+                claims: claims,
+                expires: DateTime.UtcNow.AddDays(7),
+                signingCredentials: credentials);
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }
