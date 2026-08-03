@@ -5,10 +5,8 @@ bin/
 obj/
 
 # Arquivos de configuração locais e segredos
-appsettings.json
-appsettings.Development.json
-appsettings.Production.json
 appsettings.*.json
+!appsettings.json
 
 # Visual Studio (Caches e configurações de usuário)
 .vs/

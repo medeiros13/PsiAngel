@@ -3,6 +3,7 @@ using System;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260715005517_AddPsychologistWithEncryption")]
+    partial class AddPsychologistWithEncryption
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -90,9 +93,6 @@ namespace Backend.Migrations
                     b.Property<string>("Profession")
                         .HasColumnType("text");
 
-                    b.Property<Guid>("PsychologistId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("SocialName")
                         .HasColumnType("text");
 
@@ -100,8 +100,6 @@ namespace Backend.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("PsychologistId");
 
                     b.ToTable("Patients");
                 });
@@ -189,17 +187,12 @@ namespace Backend.Migrations
                     b.Property<Guid>("PatientId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("PsychologistId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("SessionStart")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
                     b.HasIndex("PatientId");
-
-                    b.HasIndex("PsychologistId");
 
                     b.ToTable("TherapySessions");
                 });
@@ -215,17 +208,6 @@ namespace Backend.Migrations
                     b.Navigation("Patient");
                 });
 
-            modelBuilder.Entity("Backend.Models.Patient", b =>
-                {
-                    b.HasOne("Backend.Models.Psychologist", "Psychologist")
-                        .WithMany()
-                        .HasForeignKey("PsychologistId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Psychologist");
-                });
-
             modelBuilder.Entity("Backend.Models.TherapySession", b =>
                 {
                     b.HasOne("Backend.Models.Patient", "Patient")
@@ -234,15 +216,7 @@ namespace Backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Backend.Models.Psychologist", "Psychologist")
-                        .WithMany()
-                        .HasForeignKey("PsychologistId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.Navigation("Patient");
-
-                    b.Navigation("Psychologist");
                 });
 
             modelBuilder.Entity("Backend.Models.Patient", b =>
