@@ -62,6 +62,7 @@ JWT_AUDIENCE=PsiAngelFrontend
 VITE_API_URL=https://localhost:5001/api
 VITE_GOOGLE_CLIENT_ID=seu_client_id_do_google
 GOOGLE_CLIENT_SECRET=seu_client_secret_do_google
+CERTIFICATE_PASSWORD=sua_senha_segura
 ```
 
 ### 2. Configuração do Certificado HTTPS para o Backend
@@ -71,9 +72,10 @@ Como a aplicação exige comunicação segura (HTTPS), o backend no ASP.NET Core
 No seu terminal (Windows PowerShell), gere o certificado exportando para a pasta local da sua máquina executando:
 ```powershell
 New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.aspnet\https"
-dotnet dev-certs https -ep "$env:USERPROFILE\.aspnet\https\psiangel.pfx" -p "psiangel123"
+dotnet dev-certs https -ep "$env:USERPROFILE\.aspnet\https\psiangel.pfx" -p "sua_senha_segura"
 ```
-*(O `docker-compose.yml` já está configurado para ler esse certificado e usar essa mesma senha).*
+*(Certifique-se de que a senha utilizada acima seja a mesma definida na variável `CERTIFICATE_PASSWORD` do seu arquivo `.env`).*
+
 
 ### 3. Subindo a Infraestrutura com Docker
 
