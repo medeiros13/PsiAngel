@@ -1,17 +1,98 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ENV } from '../../config/env';
 import { AuthContext } from '../../contexts/AuthContext';
 
-interface Patient {
-    id: string;
-    fullName: string;
+export const Gender = {
+    Male: 1,
+    Female: 2,
+    Others: 3
+} as const;
+export type Gender = typeof Gender[keyof typeof Gender];
+
+export const PatientFrequency = {
+    Weekly: 0,
+    BiWeekly: 1,
+    Monthly: 2
+} as const;
+export type PatientFrequency = typeof PatientFrequency[keyof typeof PatientFrequency];
+
+export const ContactType = {
+    Primary: 1,
+    Secondary: 2,
+    LegalRepresentative: 3,
+    Psychiatrist: 4,
+    Other: 5
+} as const;
+export type ContactType = typeof ContactType[keyof typeof ContactType];
+
+export interface EmergencyContact {
+    id?: string;
+    name: string;
     socialName?: string;
-    treatmentStartDate: string;
+    phoneNumber: string;
+    email?: string;
+    type: ContactType;
 }
 
+export interface Patient {
+    id?: string;
+    fullName: string;
+    socialName?: string;
+    email?: string;
+    phoneNumber: string;
+    dateOfBirth: string;
+    cpf?: string;
+    treatmentStartDate: string;
+    gender: Gender;
+    profession?: string;
+    countryOfResidence?: string;
+    frequency: PatientFrequency;
+    emergencyContacts: EmergencyContact[];
+}
+
+const emptyPatient: Patient = {
+    fullName: '',
+    phoneNumber: '',
+    treatmentStartDate: '',
+    dateOfBirth: '',
+    email: '',
+    socialName: '',
+    cpf: '',
+    gender: Gender.Others,
+    profession: '',
+    countryOfResidence: '',
+    frequency: PatientFrequency.Weekly,
+    emergencyContacts: []
+};
+
+// Funções Utilitárias para Máscaras
+const formatCpf = (value: string) => {
+    return value
+        .replace(/\D/g, '') // Remove tudo o que não for número
+        .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto
+        .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto
+        .replace(/(\d{3})(\d{1,2})/, '$1-$2') // Adiciona hífen
+        .replace(/(-\d{2})\d+?$/, '$1'); // Limita o tamanho
+};
+
+const formatPhone = (value: string) => {
+    // Permite que o usuário digite '+' no começo para números internacionais, ignorando a máscara local
+    if (value.startsWith('+')) return value; 
+    
+    const v = value.replace(/\D/g, '');
+    if (v.length <= 10) {
+        return v
+            .replace(/(\d{2})(\d)/, '($1) $2')
+            .replace(/(\d{4})(\d)/, '$1-$2')
+            .substring(0, 14); // Padrão: (99) 9999-9999
+    }
+    return v
+        .replace(/(\d{2})(\d)/, '($1) $2')
+        .replace(/(\d{5})(\d)/, '$1-$2')
+        .substring(0, 15); // Padrão: (99) 99999-9999
+};
+
 export function DashboardPage() {
-    const navigate = useNavigate();
     const authContext = useContext(AuthContext);
     const user = authContext?.user;
 
@@ -21,12 +102,12 @@ export function DashboardPage() {
     
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [newPatient, setNewPatient] = useState({
-        fullName: '',
-        phoneNumber: '',
-        treatmentStartDate: '',
-        dateOfBirth: ''
-    });
+    const [newPatient, setNewPatient] = useState<Patient>(emptyPatient);
+
+    // View/Edit Modal states
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+    const [isEditMode, setIsEditMode] = useState(false);
 
     useEffect(() => {
         fetchPatients();
@@ -53,9 +134,7 @@ export function DashboardPage() {
         try {
             const response = await fetch(`${ENV.API_URL}/patients`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify(newPatient)
             });
@@ -63,12 +142,7 @@ export function DashboardPage() {
             if (response.ok) {
                 setIsModalOpen(false);
                 fetchPatients(); // Recarrega a lista
-                setNewPatient({
-                    fullName: '',
-                    phoneNumber: '',
-                    treatmentStartDate: '',
-                    dateOfBirth: ''
-                });
+                setNewPatient(emptyPatient);
             } else {
                 console.error("Falha ao salvar paciente");
             }
@@ -77,9 +151,207 @@ export function DashboardPage() {
         }
     };
 
+    const handleUpdatePatient = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedPatient?.id) return;
+        try {
+            const response = await fetch(`${ENV.API_URL}/patients/${selectedPatient.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(selectedPatient)
+            });
+            
+            if (response.ok) {
+                setIsViewModalOpen(false);
+                setIsEditMode(false);
+                fetchPatients();
+            } else {
+                console.error("Falha ao atualizar paciente");
+            }
+        } catch (error) {
+            console.error("Erro na requisição:", error);
+        }
+    };
+
+    const handleDeletePatient = async () => {
+        if (!selectedPatient?.id) return;
+        if (!window.confirm('Tem certeza que deseja remover este paciente? Esta ação não pode ser desfeita.')) return;
+        
+        try {
+            const response = await fetch(`${ENV.API_URL}/patients/${selectedPatient.id}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                setIsViewModalOpen(false);
+                fetchPatients();
+            } else {
+                console.error("Falha ao remover paciente");
+            }
+        } catch (error) {
+            console.error("Erro na requisição:", error);
+        }
+    };
+
+    const openViewModal = (patient: Patient) => {
+        // Formatar datas para o input type="date" (YYYY-MM-DD)
+        const formatForDateInput = (isoDate: string) => isoDate ? isoDate.split('T')[0] : '';
+        
+        setSelectedPatient({
+            ...patient,
+            dateOfBirth: formatForDateInput(patient.dateOfBirth),
+            treatmentStartDate: formatForDateInput(patient.treatmentStartDate),
+        });
+        setIsEditMode(false);
+        setIsViewModalOpen(true);
+    };
+
+    const handleAddEmergencyContact = (isUpdating: boolean) => {
+        const newContact: EmergencyContact = {
+            name: '',
+            phoneNumber: '',
+            type: ContactType.Primary
+        };
+        
+        if (isUpdating && selectedPatient) {
+            setSelectedPatient({
+                ...selectedPatient,
+                emergencyContacts: [...(selectedPatient.emergencyContacts || []), newContact]
+            });
+        } else {
+            setNewPatient({
+                ...newPatient,
+                emergencyContacts: [...(newPatient.emergencyContacts || []), newContact]
+            });
+        }
+    };
+
+    const handleRemoveEmergencyContact = (index: number, isUpdating: boolean) => {
+        if (isUpdating && selectedPatient) {
+            const contacts = [...(selectedPatient.emergencyContacts || [])];
+            contacts.splice(index, 1);
+            setSelectedPatient({ ...selectedPatient, emergencyContacts: contacts });
+        } else {
+            const contacts = [...(newPatient.emergencyContacts || [])];
+            contacts.splice(index, 1);
+            setNewPatient({ ...newPatient, emergencyContacts: contacts });
+        }
+    };
+
+    const handleEmergencyContactChange = (index: number, field: keyof EmergencyContact, value: any, isUpdating: boolean) => {
+        if (isUpdating && selectedPatient) {
+            const contacts = [...(selectedPatient.emergencyContacts || [])];
+            contacts[index] = { ...contacts[index], [field]: value };
+            setSelectedPatient({ ...selectedPatient, emergencyContacts: contacts });
+        } else {
+            const contacts = [...(newPatient.emergencyContacts || [])];
+            contacts[index] = { ...contacts[index], [field]: value };
+            setNewPatient({ ...newPatient, emergencyContacts: contacts });
+        }
+    };
+
     const filteredPatients = patients.filter(p =>
         p.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (p.socialName && p.socialName.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    // Reusable Form Fields component to avoid duplication between Create and Edit modals
+    const renderPatientFormFields = (patient: Patient, setPatient: (p: Patient) => void, isUpdating: boolean) => (
+        <>
+            <h3 style={styles.sectionTitle}>Dados Pessoais</h3>
+            <div style={styles.formGrid}>
+                <div style={styles.inputGroup}>
+                    <label style={styles.label}>Nome Completo *</label>
+                    <input required style={styles.input} value={patient.fullName} onChange={e => setPatient({...patient, fullName: e.target.value})} disabled={!isEditMode && isUpdating} />
+                </div>
+                <div style={styles.inputGroup}>
+                    <label style={styles.label}>Nome Social</label>
+                    <input style={styles.input} value={patient.socialName || ''} onChange={e => setPatient({...patient, socialName: e.target.value})} disabled={!isEditMode && isUpdating} />
+                </div>
+                <div style={styles.inputGroup}>
+                    <label style={styles.label}>E-mail</label>
+                    <input type="email" style={styles.input} value={patient.email || ''} onChange={e => setPatient({...patient, email: e.target.value})} disabled={!isEditMode && isUpdating} />
+                </div>
+                <div style={styles.inputGroup}>
+                    <label style={styles.label}>Telefone *</label>
+                    <input required style={styles.input} value={patient.phoneNumber} onChange={e => setPatient({...patient, phoneNumber: formatPhone(e.target.value)})} disabled={!isEditMode && isUpdating} placeholder="(11) 99999-9999 ou +1..." />
+                </div>
+                <div style={styles.inputGroup}>
+                    <label style={styles.label}>Data de Nascimento *</label>
+                    <input type="date" required style={styles.input} value={patient.dateOfBirth} onChange={e => setPatient({...patient, dateOfBirth: e.target.value})} disabled={!isEditMode && isUpdating} />
+                </div>
+                <div style={styles.inputGroup}>
+                    <label style={styles.label}>CPF</label>
+                    <input style={styles.input} value={patient.cpf || ''} onChange={e => setPatient({...patient, cpf: formatCpf(e.target.value)})} disabled={!isEditMode && isUpdating} placeholder="000.000.000-00" />
+                </div>
+                <div style={styles.inputGroup}>
+                    <label style={styles.label}>Gênero</label>
+                    <select style={styles.input} value={patient.gender} onChange={e => setPatient({...patient, gender: Number(e.target.value) as Gender})} disabled={!isEditMode && isUpdating}>
+                        <option value={Gender.Male}>Masculino</option>
+                        <option value={Gender.Female}>Feminino</option>
+                        <option value={Gender.Others}>Outros</option>
+                    </select>
+                </div>
+                <div style={styles.inputGroup}>
+                    <label style={styles.label}>Profissão</label>
+                    <input style={styles.input} value={patient.profession || ''} onChange={e => setPatient({...patient, profession: e.target.value})} disabled={!isEditMode && isUpdating} />
+                </div>
+                <div style={styles.inputGroup}>
+                    <label style={styles.label}>País de Residência</label>
+                    <input style={styles.input} value={patient.countryOfResidence || ''} onChange={e => setPatient({...patient, countryOfResidence: e.target.value})} disabled={!isEditMode && isUpdating} />
+                </div>
+            </div>
+
+            <h3 style={styles.sectionTitle}>Dados do Tratamento</h3>
+            <div style={styles.formGrid}>
+                <div style={styles.inputGroup}>
+                    <label style={styles.label}>Início do Tratamento *</label>
+                    <input type="date" required style={styles.input} value={patient.treatmentStartDate} onChange={e => setPatient({...patient, treatmentStartDate: e.target.value})} disabled={!isEditMode && isUpdating} />
+                </div>
+                <div style={styles.inputGroup}>
+                    <label style={styles.label}>Frequência</label>
+                    <select style={styles.input} value={patient.frequency} onChange={e => setPatient({...patient, frequency: Number(e.target.value) as PatientFrequency})} disabled={!isEditMode && isUpdating}>
+                        <option value={PatientFrequency.Weekly}>Semanal</option>
+                        <option value={PatientFrequency.BiWeekly}>Quinzenal</option>
+                        <option value={PatientFrequency.Monthly}>Mensal</option>
+                    </select>
+                </div>
+            </div>
+
+            <h3 style={styles.sectionTitle}>Contatos de Emergência</h3>
+            {(patient.emergencyContacts || []).map((contact, index) => (
+                <div key={index} style={styles.emergencyContactCard}>
+                    <div style={styles.formGrid}>
+                        <div style={styles.inputGroup}>
+                            <label style={styles.label}>Nome *</label>
+                            <input required style={styles.input} value={contact.name} onChange={e => handleEmergencyContactChange(index, 'name', e.target.value, isUpdating)} disabled={!isEditMode && isUpdating} />
+                        </div>
+                        <div style={styles.inputGroup}>
+                            <label style={styles.label}>Telefone *</label>
+                            <input required style={styles.input} value={contact.phoneNumber} onChange={e => handleEmergencyContactChange(index, 'phoneNumber', formatPhone(e.target.value), isUpdating)} disabled={!isEditMode && isUpdating} placeholder="(11) 99999-9999" />
+                        </div>
+                        <div style={styles.inputGroup}>
+                            <label style={styles.label}>Tipo</label>
+                            <select style={styles.input} value={contact.type} onChange={e => handleEmergencyContactChange(index, 'type', Number(e.target.value) as ContactType, isUpdating)} disabled={!isEditMode && isUpdating}>
+                                <option value={ContactType.Primary}>Primário</option>
+                                <option value={ContactType.Secondary}>Secundário</option>
+                                <option value={ContactType.LegalRepresentative}>Responsável Legal</option>
+                                <option value={ContactType.Psychiatrist}>Psiquiatra</option>
+                                <option value={ContactType.Other}>Outro</option>
+                            </select>
+                        </div>
+                    </div>
+                    {(!isUpdating || isEditMode) && (
+                        <button type="button" style={styles.removeContactBtn} onClick={() => handleRemoveEmergencyContact(index, isUpdating)}>Remover Contato</button>
+                    )}
+                </div>
+            ))}
+            {(!isUpdating || isEditMode) && (
+                <button type="button" style={styles.addContactBtn} onClick={() => handleAddEmergencyContact(isUpdating)}>+ Adicionar Contato de Emergência</button>
+            )}
+        </>
     );
 
     return (
@@ -132,7 +404,7 @@ export function DashboardPage() {
                         ) : filteredPatients.length > 0 ? (
                             <div style={styles.patientList}>
                                 {filteredPatients.map(p => (
-                                    <div key={p.id} style={styles.patientCard}>
+                                    <div key={p.id} style={{...styles.patientCard, cursor: 'pointer'}} onClick={() => openViewModal(p)}>
                                         <div style={styles.patientAvatar}>{p.fullName.charAt(0).toUpperCase()}</div>
                                         <div style={styles.patientInfo}>
                                             <div style={styles.patientName}>{p.socialName || p.fullName}</div>
@@ -195,47 +467,37 @@ export function DashboardPage() {
                     <div style={styles.modalContent}>
                         <h2 style={styles.modalTitle}>Adicionar Novo Paciente</h2>
                         <form onSubmit={handleAddPatient} style={styles.modalForm}>
-                            <div style={styles.inputGroup}>
-                                <label style={styles.label}>Nome Completo *</label>
-                                <input 
-                                    required 
-                                    style={styles.input} 
-                                    value={newPatient.fullName} 
-                                    onChange={e => setNewPatient({...newPatient, fullName: e.target.value})} 
-                                />
-                            </div>
-                            <div style={styles.inputGroup}>
-                                <label style={styles.label}>Telefone *</label>
-                                <input 
-                                    required 
-                                    style={styles.input} 
-                                    value={newPatient.phoneNumber} 
-                                    onChange={e => setNewPatient({...newPatient, phoneNumber: e.target.value})} 
-                                />
-                            </div>
-                            <div style={styles.inputGroup}>
-                                <label style={styles.label}>Data de Nascimento *</label>
-                                <input 
-                                    type="date" 
-                                    required 
-                                    style={styles.input} 
-                                    value={newPatient.dateOfBirth} 
-                                    onChange={e => setNewPatient({...newPatient, dateOfBirth: e.target.value})} 
-                                />
-                            </div>
-                            <div style={styles.inputGroup}>
-                                <label style={styles.label}>Data de Início do Tratamento *</label>
-                                <input 
-                                    type="date" 
-                                    required 
-                                    style={styles.input} 
-                                    value={newPatient.treatmentStartDate} 
-                                    onChange={e => setNewPatient({...newPatient, treatmentStartDate: e.target.value})} 
-                                />
-                            </div>
+                            {renderPatientFormFields(newPatient, setNewPatient, false)}
+                            
                             <div style={styles.modalActions}>
                                 <button type="button" onClick={() => setIsModalOpen(false)} style={styles.cancelBtn}>Cancelar</button>
                                 <button type="submit" style={styles.saveBtn}>Salvar Paciente</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de Visualização/Edição de Paciente */}
+            {isViewModalOpen && selectedPatient && (
+                <div style={styles.modalOverlay}>
+                    <div style={styles.modalContent}>
+                        <div style={styles.modalHeader}>
+                            <h2 style={{ ...styles.modalTitle, marginBottom: 0 }}>{isEditMode ? 'Editar Paciente' : 'Detalhes do Paciente'}</h2>
+                            <button type="button" onClick={() => setIsEditMode(!isEditMode)} style={styles.editToggleBtn}>
+                                {isEditMode ? 'Cancelar Edição' : 'Editar'}
+                            </button>
+                        </div>
+                        
+                        <form onSubmit={handleUpdatePatient} style={styles.modalForm}>
+                            {renderPatientFormFields(selectedPatient, setSelectedPatient, true)}
+                            
+                            <div style={{ ...styles.modalActions, justifyContent: 'space-between', marginTop: '2rem' }}>
+                                <button type="button" onClick={handleDeletePatient} style={styles.deleteBtn}>Excluir Paciente</button>
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <button type="button" onClick={() => { setIsViewModalOpen(false); setIsEditMode(false); }} style={styles.cancelBtn}>Fechar</button>
+                                    {isEditMode && <button type="submit" style={styles.saveBtn}>Salvar Alterações</button>}
+                                </div>
                             </div>
                         </form>
                     </div>
@@ -439,6 +701,7 @@ const styles = {
         alignItems: 'center',
         gap: '1rem',
         boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+        transition: 'transform 0.1s ease, box-shadow 0.1s ease',
     },
     patientAvatar: {
         width: '40px',
@@ -573,19 +836,47 @@ const styles = {
         backgroundColor: 'white',
         padding: '2rem',
         borderRadius: '24px',
-        width: '400px',
+        width: '600px',
+        maxHeight: '90vh',
+        overflowY: 'auto' as const,
         boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+    },
+    modalHeader: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '1.5rem',
     },
     modalTitle: {
         marginTop: 0,
-        marginBottom: '1.5rem',
         color: '#333',
         fontFamily: "'Playfair Display', serif",
+    },
+    editToggleBtn: {
+        padding: '0.5rem 1rem',
+        borderRadius: '16px',
+        border: '1px solid #6b4c9a',
+        background: 'transparent',
+        color: '#6b4c9a',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+    },
+    sectionTitle: {
+        fontSize: '1.1rem',
+        color: '#6b4c9a',
+        borderBottom: '1px solid #eee',
+        paddingBottom: '0.5rem',
+        marginTop: '1.5rem',
+        marginBottom: '1rem',
+    },
+    formGrid: {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '1rem',
     },
     modalForm: {
         display: 'flex',
         flexDirection: 'column' as const,
-        gap: '1rem',
     },
     inputGroup: {
         display: 'flex',
@@ -593,22 +884,51 @@ const styles = {
         gap: '0.4rem',
     },
     label: {
-        fontSize: '0.9rem',
+        fontSize: '0.85rem',
         color: '#555',
         fontWeight: 'bold',
     },
     input: {
-        padding: '0.8rem',
+        padding: '0.7rem',
         borderRadius: '12px',
-        border: '1px solid #ccc',
-        fontSize: '1rem',
+        border: '1px solid #ddd',
+        fontSize: '0.95rem',
         outline: 'none',
+        background: '#fcfcfc',
+    },
+    emergencyContactCard: {
+        border: '1px solid #eee',
+        borderRadius: '12px',
+        padding: '1rem',
+        marginBottom: '1rem',
+        background: '#f9f9fa',
+    },
+    addContactBtn: {
+        padding: '0.6rem 1rem',
+        borderRadius: '12px',
+        border: '1px dashed #6b4c9a',
+        background: 'transparent',
+        color: '#6b4c9a',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+        marginTop: '0.5rem',
+        alignSelf: 'flex-start' as const,
+    },
+    removeContactBtn: {
+        padding: '0.4rem 0.8rem',
+        borderRadius: '8px',
+        border: 'none',
+        background: '#ffeeee',
+        color: '#d9534f',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+        marginTop: '1rem',
     },
     modalActions: {
         display: 'flex',
         justifyContent: 'flex-end',
         gap: '1rem',
-        marginTop: '1rem',
+        marginTop: '2rem',
     },
     cancelBtn: {
         padding: '0.8rem 1.5rem',
@@ -628,4 +948,13 @@ const styles = {
         fontWeight: 'bold',
         cursor: 'pointer',
     },
+    deleteBtn: {
+        padding: '0.8rem 1.5rem',
+        borderRadius: '24px',
+        border: 'none',
+        background: '#fff0f0',
+        color: '#d9534f',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+    }
 };

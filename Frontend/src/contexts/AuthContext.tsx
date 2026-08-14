@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useState, useEffect, type ReactNode } from 'react';
 import { ENV } from '../config/env';
 
 // 1. Tipagem para ajudar o VS Code (e você) a saber o que tem dentro do Contexto

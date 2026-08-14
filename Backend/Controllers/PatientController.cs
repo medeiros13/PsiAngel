@@ -101,7 +101,7 @@ public class PatientController : ControllerBase
         {
             if (!incomingContacts.Any(c => c.Id == existing.Id))
             {
-                patient.EmergencyContacts.Remove(existing);
+                _db.Remove(existing);
             }
         }
 
