@@ -1,11 +1,14 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Backend.Models;
+using System.Security.Claims;
 
 namespace Backend.Controllers;
 
 [ApiController]
 [Route("api/patients")]
+[Authorize]
 public class PatientController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -15,16 +18,31 @@ public class PatientController : ControllerBase
         _db = db;
     }
 
+    private Guid GetPsychologistId()
+    {
+        var idStr = User.FindFirstValue("PsychologistId");
+        if (Guid.TryParse(idStr, out var id)) return id;
+        throw new UnauthorizedAccessException("Psychologist ID not found in token.");
+    }
+
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Patient>>> GetPatients()
     {
-        return await _db.Patients.Include(p => p.EmergencyContacts).ToListAsync();
+        var psychologistId = GetPsychologistId();
+        return await _db.Patients
+            .Include(p => p.EmergencyContacts)
+            .Where(p => p.PsychologistId == psychologistId)
+            .ToListAsync();
     }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<Patient>> GetPatientById(Guid id)
     {
-        var patient = await _db.Patients.Include(p => p.EmergencyContacts).FirstOrDefaultAsync(p => p.Id == id);
+        var psychologistId = GetPsychologistId();
+        var patient = await _db.Patients
+            .Include(p => p.EmergencyContacts)
+            .FirstOrDefaultAsync(p => p.Id == id && p.PsychologistId == psychologistId);
+            
         if (patient is null) return NotFound();
         return Ok(patient);
     }
@@ -33,6 +51,7 @@ public class PatientController : ControllerBase
     public async Task<ActionResult<Patient>> CreatePatient(Patient patient)
     {
         patient.Id = Guid.NewGuid();
+        patient.PsychologistId = GetPsychologistId();
 
         patient.TreatmentStartDate = patient.TreatmentStartDate.ToUniversalTime();
         patient.DateOfBirth = patient.DateOfBirth.ToUniversalTime();
@@ -54,7 +73,11 @@ public class PatientController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> UpdatePatient(Guid id, Patient inputPatient)
     {
-        var patient = await _db.Patients.Include(p => p.EmergencyContacts).FirstOrDefaultAsync(p => p.Id == id);
+        var psychologistId = GetPsychologistId();
+        var patient = await _db.Patients
+            .Include(p => p.EmergencyContacts)
+            .FirstOrDefaultAsync(p => p.Id == id && p.PsychologistId == psychologistId);
+            
         if (patient is null) return NotFound();
 
         patient.FullName = inputPatient.FullName;
@@ -123,7 +146,9 @@ public class PatientController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeletePatient(Guid id)
     {
-        var patient = await _db.Patients.FindAsync(id);
+        var psychologistId = GetPsychologistId();
+        var patient = await _db.Patients.FirstOrDefaultAsync(p => p.Id == id && p.PsychologistId == psychologistId);
+        
         if (patient is null) return NotFound();
 
         _db.Patients.Remove(patient);

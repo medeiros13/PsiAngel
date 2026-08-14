@@ -31,7 +31,7 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Patient>()
             .HasOne(p => p.Psychologist)
-            .WithMany()
+            .WithMany(psy => psy.Patients)
             .HasForeignKey(p => p.PsychologistId)
             .OnDelete(DeleteBehavior.Restrict);
 
