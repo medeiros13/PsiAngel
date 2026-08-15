@@ -418,10 +418,11 @@ export function DashboardPage() {
             <h3 style={styles.sectionTitle}>Gestão Financeira</h3>
             <div style={{ ...styles.formGrid, gridTemplateColumns: '1fr' }}>
                 <div style={{ ...styles.inputGroup, alignItems: 'center' }}>
-                    <label style={styles.label}>Tipo de Pagamento</label>
+                    <label style={styles.label}>Tipo de Pagamento *</label>
                     <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', justifyContent: 'center' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
                             <input 
+                                required
                                 type="radio" 
                                 name="paymentType" 
                                 value={PaymentType.PerSession}
@@ -433,6 +434,7 @@ export function DashboardPage() {
                         </label>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
                             <input 
+                                required
                                 type="radio" 
                                 name="paymentType" 
                                 value={PaymentType.Package}
@@ -449,8 +451,9 @@ export function DashboardPage() {
             {patient.paymentType === PaymentType.PerSession && (
                 <div style={styles.formGrid}>
                     <div style={styles.inputGroup}>
-                        <label style={styles.label}>Moeda</label>
+                        <label style={styles.label}>Moeda *</label>
                         <select 
+                            required
                             style={styles.input} 
                             value={patient.currency || Currency.BRL} 
                             onChange={e => setPatient({...patient, currency: Number(e.target.value) as Currency})} 
@@ -462,8 +465,9 @@ export function DashboardPage() {
                         </select>
                     </div>
                     <div style={styles.inputGroup}>
-                        <label style={styles.label}>Valor da sessão</label>
+                        <label style={styles.label}>Valor da sessão *</label>
                         <input 
+                            required
                             style={styles.input} 
                             value={patient.sessionPrice !== undefined ? formatCurrency(patient.sessionPrice, patient.currency || Currency.BRL) : ''}
                             onChange={e => setPatient({...patient, sessionPrice: parseCurrency(e.target.value)})} 
@@ -472,8 +476,9 @@ export function DashboardPage() {
                         />
                     </div>
                     <div style={styles.inputGroup}>
-                        <label style={styles.label}>Meio de pagamento</label>
+                        <label style={styles.label}>Meio de pagamento *</label>
                         <select 
+                            required
                             style={styles.input} 
                             value={patient.paymentMethod || ''} 
                             onChange={e => setPatient({...patient, paymentMethod: Number(e.target.value) as PaymentMethod})} 
@@ -493,10 +498,11 @@ export function DashboardPage() {
                 <>
                     <div style={{ ...styles.formGrid, gridTemplateColumns: '1fr', marginTop: '1rem' }}>
                         <div style={{ ...styles.inputGroup, alignItems: 'center' }}>
-                            <label style={styles.label}>Tipo de Pacote</label>
+                            <label style={styles.label}>Tipo de Pacote *</label>
                             <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', justifyContent: 'center' }}>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
                                     <input 
+                                        required
                                         type="radio" 
                                         name="packageType" 
                                         value={PackageType.Monthly}
@@ -508,6 +514,7 @@ export function DashboardPage() {
                                 </label>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
                                     <input 
+                                        required
                                         type="radio" 
                                         name="packageType" 
                                         value={PackageType.PerSessions}
@@ -524,10 +531,11 @@ export function DashboardPage() {
                     {patient.packageType === PackageType.Monthly && (
                         <div style={styles.formGrid}>
                             <div style={{ ...styles.inputGroup, gridColumn: '1 / -1', alignItems: 'center' }}>
-                                <label style={styles.label}>Início da cobrança</label>
+                                <label style={styles.label}>Início da cobrança *</label>
                                 <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', justifyContent: 'center' }}>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
                                         <input 
+                                            required
                                             type="radio" 
                                             name="billingStartDateType" 
                                             value={BillingStartDateType.CurrentMonth}
@@ -539,6 +547,7 @@ export function DashboardPage() {
                                     </label>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
                                         <input 
+                                            required
                                             type="radio" 
                                             name="billingStartDateType" 
                                             value={BillingStartDateType.CustomDate}
@@ -553,8 +562,9 @@ export function DashboardPage() {
                             
                             {patient.billingStartDateType === BillingStartDateType.CustomDate && (
                                 <div style={styles.inputGroup}>
-                                    <label style={styles.label}>Data da cobrança</label>
+                                    <label style={styles.label}>Data da cobrança *</label>
                                     <input 
+                                        required
                                         type="date"
                                         style={styles.input} 
                                         value={patient.customBillingDate || ''} 
@@ -565,8 +575,9 @@ export function DashboardPage() {
                             )}
 
                             <div style={styles.inputGroup}>
-                                <label style={styles.label}>Moeda</label>
+                                <label style={styles.label}>Moeda *</label>
                                 <select 
+                                    required
                                     style={styles.input} 
                                     value={patient.currency || Currency.BRL} 
                                     onChange={e => setPatient({...patient, currency: Number(e.target.value) as Currency})} 
@@ -578,8 +589,9 @@ export function DashboardPage() {
                                 </select>
                             </div>
                             <div style={styles.inputGroup}>
-                                <label style={styles.label}>Valor</label>
+                                <label style={styles.label}>Valor *</label>
                                 <input 
+                                    required
                                     style={styles.input} 
                                     value={patient.sessionPrice !== undefined ? formatCurrency(patient.sessionPrice, patient.currency || Currency.BRL) : ''}
                                     onChange={e => setPatient({...patient, sessionPrice: parseCurrency(e.target.value)})} 
@@ -588,8 +600,9 @@ export function DashboardPage() {
                                 />
                             </div>
                             <div style={styles.inputGroup}>
-                                <label style={styles.label}>Meio de pagamento</label>
+                                <label style={styles.label}>Meio de pagamento *</label>
                                 <select 
+                                    required
                                     style={styles.input} 
                                     value={patient.paymentMethod || ''} 
                                     onChange={e => setPatient({...patient, paymentMethod: Number(e.target.value) as PaymentMethod})} 
@@ -608,8 +621,9 @@ export function DashboardPage() {
                     {patient.packageType === PackageType.PerSessions && (
                         <div style={styles.formGrid}>
                             <div style={styles.inputGroup}>
-                                <label style={styles.label}>Moeda</label>
+                                <label style={styles.label}>Moeda *</label>
                                 <select 
+                                    required
                                     style={styles.input} 
                                     value={patient.currency || Currency.BRL} 
                                     onChange={e => setPatient({...patient, currency: Number(e.target.value) as Currency})} 
@@ -621,8 +635,9 @@ export function DashboardPage() {
                                 </select>
                             </div>
                             <div style={styles.inputGroup}>
-                                <label style={styles.label}>Valor</label>
+                                <label style={styles.label}>Valor *</label>
                                 <input 
+                                    required
                                     style={styles.input} 
                                     value={patient.sessionPrice !== undefined ? formatCurrency(patient.sessionPrice, patient.currency || Currency.BRL) : ''}
                                     onChange={e => setPatient({...patient, sessionPrice: parseCurrency(e.target.value)})} 
@@ -631,8 +646,9 @@ export function DashboardPage() {
                                 />
                             </div>
                             <div style={styles.inputGroup}>
-                                <label style={styles.label}>Quantidade de sessões</label>
+                                <label style={styles.label}>Quantidade de sessões *</label>
                                 <input 
+                                    required
                                     type="number"
                                     min="1"
                                     style={styles.input} 
@@ -643,8 +659,9 @@ export function DashboardPage() {
                                 />
                             </div>
                             <div style={styles.inputGroup}>
-                                <label style={styles.label}>Meio de pagamento</label>
+                                <label style={styles.label}>Meio de pagamento *</label>
                                 <select 
+                                    required
                                     style={styles.input} 
                                     value={patient.paymentMethod || ''} 
                                     onChange={e => setPatient({...patient, paymentMethod: Number(e.target.value) as PaymentMethod})} 

@@ -26,6 +26,39 @@ public class PatientController : ControllerBase
         throw new UnauthorizedAccessException("Psychologist ID not found in token.");
     }
 
+    private string? ValidateGestaoFinanceira(Patient patient)
+    {
+        if (patient.PaymentType == null) return "O Tipo de Pagamento é obrigatório.";
+        
+        if (patient.PaymentType == Models.PaymentType.PerSession)
+        {
+            if (patient.Currency == null) return "A Moeda é obrigatória.";
+            if (patient.SessionPrice == null) return "O Valor da sessão é obrigatório.";
+            if (patient.PaymentMethod == null) return "O Meio de pagamento é obrigatório.";
+        }
+        else if (patient.PaymentType == Models.PaymentType.Package)
+        {
+            if (patient.PackageType == null) return "O Tipo de Pacote é obrigatório.";
+            
+            if (patient.PackageType == Models.PackageType.Monthly)
+            {
+                if (patient.BillingStartDateType == null) return "O Início da cobrança é obrigatório.";
+                if (patient.BillingStartDateType == Models.BillingStartDateType.CustomDate && patient.CustomBillingDate == null) return "A Data da cobrança é obrigatória.";
+                if (patient.Currency == null) return "A Moeda é obrigatória.";
+                if (patient.SessionPrice == null) return "O Valor é obrigatório.";
+                if (patient.PaymentMethod == null) return "O Meio de pagamento é obrigatório.";
+            }
+            else if (patient.PackageType == Models.PackageType.PerSessions)
+            {
+                if (patient.Currency == null) return "A Moeda é obrigatória.";
+                if (patient.SessionPrice == null) return "O Valor é obrigatório.";
+                if (patient.SessionQuantity == null) return "A Quantidade de sessões é obrigatória.";
+                if (patient.PaymentMethod == null) return "O Meio de pagamento é obrigatório.";
+            }
+        }
+        return null;
+    }
+
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<Patient>>> GetPatients([FromQuery] int page = 1, [FromQuery] int limit = 10, [FromQuery] string? search = null, [FromQuery] string sortBy = "date", [FromQuery] bool sortDesc = true)
     {
@@ -88,6 +121,9 @@ public class PatientController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Patient>> CreatePatient(Patient patient)
     {
+        var validationError = ValidateGestaoFinanceira(patient);
+        if (validationError != null) return BadRequest(new { message = validationError });
+
         patient.Id = Guid.NewGuid();
         patient.PsychologistId = GetPsychologistId();
 
@@ -116,6 +152,9 @@ public class PatientController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> UpdatePatient(Guid id, Patient inputPatient)
     {
+        var validationError = ValidateGestaoFinanceira(inputPatient);
+        if (validationError != null) return BadRequest(new { message = validationError });
+
         var psychologistId = GetPsychologistId();
         var patient = await _db.Patients
             .Include(p => p.EmergencyContacts)
