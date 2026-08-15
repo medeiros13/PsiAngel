@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Backend.Models;
+using Backend.Models.DTOs;
 using System.Security.Claims;
 
 namespace Backend.Controllers;
@@ -26,13 +27,50 @@ public class PatientController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Patient>>> GetPatients()
+    public async Task<ActionResult<PaginatedResponse<Patient>>> GetPatients([FromQuery] int page = 1, [FromQuery] int limit = 10, [FromQuery] string? search = null, [FromQuery] string sortBy = "date", [FromQuery] bool sortDesc = true)
     {
         var psychologistId = GetPsychologistId();
-        return await _db.Patients
+        
+        var query = _db.Patients
             .Include(p => p.EmergencyContacts)
-            .Where(p => p.PsychologistId == psychologistId)
+            .Where(p => p.PsychologistId == psychologistId);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var lowerSearch = search.ToLower();
+            query = query.Where(p => p.FullName.ToLower().Contains(lowerSearch) || 
+                                    (p.SocialName != null && p.SocialName.ToLower().Contains(lowerSearch)));
+        }
+
+        var totalItems = await query.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalItems / (double)limit);
+
+        if (sortBy.ToLower() == "name")
+        {
+            query = sortDesc 
+                ? query.OrderByDescending(p => p.FullName).ThenByDescending(p => p.TreatmentStartDate) 
+                : query.OrderBy(p => p.FullName).ThenByDescending(p => p.TreatmentStartDate);
+        }
+        else
+        {
+            // default is date
+            query = sortDesc 
+                ? query.OrderByDescending(p => p.TreatmentStartDate).ThenBy(p => p.FullName) 
+                : query.OrderBy(p => p.TreatmentStartDate).ThenBy(p => p.FullName);
+        }
+
+        var patients = await query
+            .Skip((page - 1) * limit)
+            .Take(limit)
             .ToListAsync();
+
+        return Ok(new PaginatedResponse<Patient>
+        {
+            Items = patients,
+            TotalItems = totalItems,
+            CurrentPage = page,
+            TotalPages = totalPages
+        });
     }
 
     [HttpGet("{id:guid}")]

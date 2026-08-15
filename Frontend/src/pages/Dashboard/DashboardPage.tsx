@@ -99,6 +99,11 @@ export function DashboardPage() {
     const [patients, setPatients] = useState<Patient[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [sortBy, setSortBy] = useState<'date' | 'name'>('date');
+    const [sortDesc, setSortDesc] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
     
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -110,8 +115,11 @@ export function DashboardPage() {
     const [isEditMode, setIsEditMode] = useState(false);
 
     useEffect(() => {
-        fetchPatients();
-    }, []);
+        const timeoutId = setTimeout(() => {
+            fetchPatients();
+        }, 300);
+        return () => clearTimeout(timeoutId);
+    }, [currentPage, searchTerm, sortBy, sortDesc]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -128,13 +136,26 @@ export function DashboardPage() {
     }, [isModalOpen, isViewModalOpen]);
 
     const fetchPatients = async () => {
+        setLoading(true);
         try {
-            const response = await fetch(`${ENV.API_URL}/patients`, {
+            const queryParams = new URLSearchParams({
+                page: currentPage.toString(),
+                limit: '10'
+            });
+            if (searchTerm) {
+                queryParams.append('search', searchTerm);
+            }
+            queryParams.append('sortBy', sortBy);
+            queryParams.append('sortDesc', sortDesc.toString());
+            
+            const response = await fetch(`${ENV.API_URL}/patients?${queryParams.toString()}`, {
                 credentials: 'include'
             });
             if (response.ok) {
                 const data = await response.json();
-                setPatients(data);
+                setPatients(data.items || []);
+                setTotalPages(data.totalPages || 1);
+                setTotalItems(data.totalItems || 0);
             }
         } catch (error) {
             console.error("Erro ao buscar pacientes:", error);
@@ -266,10 +287,8 @@ export function DashboardPage() {
         }
     };
 
-    const filteredPatients = patients.filter(p =>
-        p.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.socialName && p.socialName.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    // O filtro local não é mais necessário pois é feito no backend.
+    const filteredPatients = patients;
 
     // Reusable Form Fields component to avoid duplication between Create and Edit modals
     const renderPatientFormFields = (patient: Patient, setPatient: (p: Patient) => void, isUpdating: boolean) => (
@@ -397,8 +416,50 @@ export function DashboardPage() {
                             placeholder="Busque seu paciente"
                             style={styles.searchInput}
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setCurrentPage(1);
+                            }}
                         />
+                        <div style={styles.sortContainer}>
+                            <select 
+                                style={styles.sortSelect} 
+                                value={sortBy} 
+                                onChange={e => {
+                                    setSortBy(e.target.value as 'date' | 'name');
+                                    setCurrentPage(1);
+                                }}
+                            >
+                                <option value="date">Início tratamento</option>
+                                <option value="name">Nome</option>
+                            </select>
+                            <button 
+                                type="button"
+                                style={styles.sortDirectionBtn} 
+                                onClick={() => {
+                                    setSortDesc(!sortDesc);
+                                    setCurrentPage(1);
+                                }}
+                                title={sortDesc ? "Ordem Decrescente" : "Ordem Crescente"}
+                            >
+                                <svg 
+                                    width="24" 
+                                    height="24" 
+                                    viewBox="0 0 24 24" 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    strokeWidth="2" 
+                                    strokeLinecap="round" 
+                                    strokeLinejoin="round"
+                                    style={{
+                                        transform: sortDesc ? 'rotate(180deg)' : 'none',
+                                        transition: 'transform 0.3s ease'
+                                    }}
+                                >
+                                    <path d="M12 19V5M5 12l7-7 7 7"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     <div style={styles.listControls}>
@@ -437,6 +498,29 @@ export function DashboardPage() {
                                 </p>
                                 <button style={styles.addPatientButton} onClick={() => setIsModalOpen(true)}>
                                     + Adicionar paciente
+                                </button>
+                            </div>
+                        )}
+                        
+                        {/* Pagination Controls */}
+                        {totalPages > 1 && (
+                            <div style={styles.paginationContainer}>
+                                <button 
+                                    style={currentPage === 1 ? styles.paginationBtnDisabled : styles.paginationBtn} 
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                >
+                                    Anterior
+                                </button>
+                                <span style={styles.paginationText}>
+                                    Página {currentPage} de {totalPages} ({totalItems} pacientes)
+                                </span>
+                                <button 
+                                    style={currentPage === totalPages ? styles.paginationBtnDisabled : styles.paginationBtn} 
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    Próxima
                                 </button>
                             </div>
                         )}
@@ -624,6 +708,35 @@ const styles = {
         fontSize: '1rem',
         outline: 'none',
         fontFamily: 'var(--sans)',
+    },
+    sortContainer: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+    },
+    sortSelect: {
+        padding: '0.6rem 1.2rem',
+        borderRadius: '20px',
+        border: 'none',
+        background: 'rgba(255, 255, 255, 0.7)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+        fontSize: '0.95rem',
+        fontWeight: 500,
+        outline: 'none',
+        fontFamily: 'var(--sans)',
+        color: 'var(--color-primary)',
+        cursor: 'pointer',
+    },
+    sortDirectionBtn: {
+        background: 'transparent',
+        border: 'none',
+        color: 'var(--color-magenta)',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0.5rem',
+        transition: 'opacity 0.2s ease',
     },
     listControls: {
         display: 'flex',
@@ -993,5 +1106,41 @@ const styles = {
         fontWeight: 'bold',
         cursor: 'pointer',
         fontFamily: 'var(--sans)',
+    },
+    paginationContainer: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: '1rem',
+        marginTop: '1.5rem',
+        padding: '1rem 0',
+        borderTop: '1px solid var(--color-pink-light-1)',
+    },
+    paginationBtn: {
+        padding: '0.5rem 1rem',
+        borderRadius: '16px',
+        border: '1px solid var(--color-magenta)',
+        background: 'transparent',
+        color: 'var(--color-magenta)',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+        fontFamily: 'var(--sans)',
+        transition: 'all 0.2s ease',
+    },
+    paginationBtnDisabled: {
+        padding: '0.5rem 1rem',
+        borderRadius: '16px',
+        border: '1px solid var(--color-pink-light-1)',
+        background: 'var(--color-pink-baby)',
+        color: 'var(--color-text)',
+        cursor: 'not-allowed',
+        fontFamily: 'var(--sans)',
+        opacity: 0.6,
+    },
+    paginationText: {
+        fontSize: '0.9rem',
+        color: 'var(--color-text)',
+        fontFamily: 'var(--sans)',
+        fontWeight: 500,
     }
 };
