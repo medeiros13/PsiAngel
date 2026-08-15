@@ -300,6 +300,7 @@ export function DashboardPage() {
             ...patient,
             dateOfBirth: formatForDateInput(patient.dateOfBirth),
             treatmentStartDate: formatForDateInput(patient.treatmentStartDate),
+            customBillingDate: patient.customBillingDate ? formatForDateInput(patient.customBillingDate) : undefined,
         });
         setIsEditMode(false);
         setIsViewModalOpen(true);
