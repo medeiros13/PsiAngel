@@ -25,6 +25,39 @@ export const ContactType = {
 } as const;
 export type ContactType = typeof ContactType[keyof typeof ContactType];
 
+export const PaymentType = {
+    PerSession: 1,
+    Package: 2
+} as const;
+export type PaymentType = typeof PaymentType[keyof typeof PaymentType];
+
+export const Currency = {
+    BRL: 1,
+    USD: 2,
+    EUR: 3
+} as const;
+export type Currency = typeof Currency[keyof typeof Currency];
+
+export const PaymentMethod = {
+    CreditCard: 1,
+    Pix: 2,
+    Cash: 3,
+    Transfer: 4
+} as const;
+export type PaymentMethod = typeof PaymentMethod[keyof typeof PaymentMethod];
+
+export const PackageType = {
+    Monthly: 1,
+    PerSessions: 2
+} as const;
+export type PackageType = typeof PackageType[keyof typeof PackageType];
+
+export const BillingStartDateType = {
+    CurrentMonth: 1,
+    CustomDate: 2
+} as const;
+export type BillingStartDateType = typeof BillingStartDateType[keyof typeof BillingStartDateType];
+
 export interface EmergencyContact {
     id?: string;
     name: string;
@@ -48,6 +81,16 @@ export interface Patient {
     countryOfResidence?: string;
     frequency: PatientFrequency;
     emergencyContacts: EmergencyContact[];
+    
+    // Gestão Financeira
+    paymentType?: PaymentType;
+    currency?: Currency;
+    sessionPrice?: number;
+    paymentMethod?: PaymentMethod;
+    packageType?: PackageType;
+    billingStartDateType?: BillingStartDateType;
+    customBillingDate?: string;
+    sessionQuantity?: number;
 }
 
 const emptyPatient: Patient = {
@@ -62,7 +105,8 @@ const emptyPatient: Patient = {
     profession: '',
     countryOfResidence: '',
     frequency: PatientFrequency.Weekly,
-    emergencyContacts: []
+    emergencyContacts: [],
+    currency: Currency.BRL // Padrão BRL
 };
 
 // Funções Utilitárias para Máscaras
@@ -90,6 +134,24 @@ const formatPhone = (value: string) => {
         .replace(/(\d{2})(\d)/, '($1) $2')
         .replace(/(\d{5})(\d)/, '$1-$2')
         .substring(0, 15); // Padrão: (99) 99999-9999
+};
+
+const formatCurrency = (value: number | undefined, currency: Currency | undefined) => {
+    if (value === undefined || isNaN(value)) return '';
+    
+    if (currency === Currency.USD) {
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+    } else if (currency === Currency.EUR) {
+        return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
+    }
+    // Default BRL
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+};
+
+const parseCurrency = (formattedValue: string) => {
+    const digits = formattedValue.replace(/\D/g, '');
+    if (!digits) return undefined;
+    return parseInt(digits, 10) / 100;
 };
 
 export function DashboardPage() {
@@ -353,36 +415,273 @@ export function DashboardPage() {
                 </div>
             </div>
 
-            <h3 style={styles.sectionTitle}>Contatos de Emergência</h3>
-            {(patient.emergencyContacts || []).map((contact, index) => (
-                <div key={index} style={styles.emergencyContactCard}>
-                    <div style={styles.formGrid}>
+            <h3 style={styles.sectionTitle}>Gestão Financeira</h3>
+            <div style={{ ...styles.formGrid, gridTemplateColumns: '1fr' }}>
+                <div style={styles.inputGroup}>
+                    <label style={styles.label}>Tipo de Pagamento</label>
+                    <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
+                            <input 
+                                type="radio" 
+                                name="paymentType" 
+                                value={PaymentType.PerSession}
+                                checked={patient.paymentType === PaymentType.PerSession}
+                                onChange={() => setPatient({ ...patient, paymentType: PaymentType.PerSession, packageType: undefined })}
+                                disabled={!isEditMode && isUpdating}
+                            />
+                            Por sessão
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
+                            <input 
+                                type="radio" 
+                                name="paymentType" 
+                                value={PaymentType.Package}
+                                checked={patient.paymentType === PaymentType.Package}
+                                onChange={() => setPatient({ ...patient, paymentType: PaymentType.Package })}
+                                disabled={!isEditMode && isUpdating}
+                            />
+                            Por pacote
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            {patient.paymentType === PaymentType.PerSession && (
+                <div style={styles.formGrid}>
+                    <div style={styles.inputGroup}>
+                        <label style={styles.label}>Moeda</label>
+                        <select 
+                            style={styles.input} 
+                            value={patient.currency || Currency.BRL} 
+                            onChange={e => setPatient({...patient, currency: Number(e.target.value) as Currency})} 
+                            disabled={!isEditMode && isUpdating}
+                        >
+                            <option value={Currency.BRL}>BRL (R$)</option>
+                            <option value={Currency.USD}>USD ($)</option>
+                            <option value={Currency.EUR}>EUR (€)</option>
+                        </select>
+                    </div>
+                    <div style={styles.inputGroup}>
+                        <label style={styles.label}>Valor da sessão</label>
+                        <input 
+                            style={styles.input} 
+                            value={patient.sessionPrice !== undefined ? formatCurrency(patient.sessionPrice, patient.currency || Currency.BRL) : ''}
+                            onChange={e => setPatient({...patient, sessionPrice: parseCurrency(e.target.value)})} 
+                            disabled={!isEditMode && isUpdating} 
+                            placeholder="0,00"
+                        />
+                    </div>
+                    <div style={styles.inputGroup}>
+                        <label style={styles.label}>Meio de pagamento</label>
+                        <select 
+                            style={styles.input} 
+                            value={patient.paymentMethod || ''} 
+                            onChange={e => setPatient({...patient, paymentMethod: Number(e.target.value) as PaymentMethod})} 
+                            disabled={!isEditMode && isUpdating}
+                        >
+                            <option value="">Selecione...</option>
+                            <option value={PaymentMethod.CreditCard}>Cartão de crédito</option>
+                            <option value={PaymentMethod.Pix}>Pix</option>
+                            <option value={PaymentMethod.Cash}>Dinheiro</option>
+                            <option value={PaymentMethod.Transfer}>Transferência</option>
+                        </select>
+                    </div>
+                </div>
+            )}
+
+            {patient.paymentType === PaymentType.Package && (
+                <>
+                    <div style={{ ...styles.formGrid, gridTemplateColumns: '1fr', marginTop: '1rem' }}>
                         <div style={styles.inputGroup}>
-                            <label style={styles.label}>Nome *</label>
-                            <input required style={styles.input} value={contact.name} onChange={e => handleEmergencyContactChange(index, 'name', e.target.value, isUpdating)} disabled={!isEditMode && isUpdating} />
-                        </div>
-                        <div style={styles.inputGroup}>
-                            <label style={styles.label}>Telefone *</label>
-                            <input required style={styles.input} value={contact.phoneNumber} onChange={e => handleEmergencyContactChange(index, 'phoneNumber', formatPhone(e.target.value), isUpdating)} disabled={!isEditMode && isUpdating} placeholder="(11) 99999-9999" />
-                        </div>
-                        <div style={styles.inputGroup}>
-                            <label style={styles.label}>Tipo</label>
-                            <select style={styles.input} value={contact.type} onChange={e => handleEmergencyContactChange(index, 'type', Number(e.target.value) as ContactType, isUpdating)} disabled={!isEditMode && isUpdating}>
-                                <option value={ContactType.Primary}>Primário</option>
-                                <option value={ContactType.Secondary}>Secundário</option>
-                                <option value={ContactType.LegalRepresentative}>Responsável Legal</option>
-                                <option value={ContactType.Psychiatrist}>Psiquiatra</option>
-                                <option value={ContactType.Other}>Outro</option>
-                            </select>
+                            <label style={styles.label}>Tipo de Pacote</label>
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
+                                    <input 
+                                        type="radio" 
+                                        name="packageType" 
+                                        value={PackageType.Monthly}
+                                        checked={patient.packageType === PackageType.Monthly}
+                                        onChange={() => setPatient({ ...patient, packageType: PackageType.Monthly, sessionQuantity: undefined })}
+                                        disabled={!isEditMode && isUpdating}
+                                    />
+                                    Mensal
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
+                                    <input 
+                                        type="radio" 
+                                        name="packageType" 
+                                        value={PackageType.PerSessions}
+                                        checked={patient.packageType === PackageType.PerSessions}
+                                        onChange={() => setPatient({ ...patient, packageType: PackageType.PerSessions, billingStartDateType: undefined, customBillingDate: undefined })}
+                                        disabled={!isEditMode && isUpdating}
+                                    />
+                                    Por sessões
+                                </label>
+                            </div>
                         </div>
                     </div>
-                    {(!isUpdating || isEditMode) && (
-                        <button type="button" style={styles.removeContactBtn} onClick={() => handleRemoveEmergencyContact(index, isUpdating)}>Remover Contato</button>
+
+                    {patient.packageType === PackageType.Monthly && (
+                        <div style={styles.formGrid}>
+                            <div style={styles.inputGroup}>
+                                <label style={styles.label}>Início da cobrança</label>
+                                <select 
+                                    style={styles.input} 
+                                    value={patient.billingStartDateType || ''} 
+                                    onChange={e => setPatient({...patient, billingStartDateType: Number(e.target.value) as BillingStartDateType})} 
+                                    disabled={!isEditMode && isUpdating}
+                                >
+                                    <option value="">Selecione...</option>
+                                    <option value={BillingStartDateType.CurrentMonth}>Mensalidade atual</option>
+                                    <option value={BillingStartDateType.CustomDate}>Definir data</option>
+                                </select>
+                            </div>
+                            
+                            {patient.billingStartDateType === BillingStartDateType.CustomDate && (
+                                <div style={styles.inputGroup}>
+                                    <label style={styles.label}>Data da cobrança</label>
+                                    <input 
+                                        type="date"
+                                        style={styles.input} 
+                                        value={patient.customBillingDate || ''} 
+                                        onChange={e => setPatient({...patient, customBillingDate: e.target.value})} 
+                                        disabled={!isEditMode && isUpdating}
+                                    />
+                                </div>
+                            )}
+
+                            <div style={styles.inputGroup}>
+                                <label style={styles.label}>Moeda</label>
+                                <select 
+                                    style={styles.input} 
+                                    value={patient.currency || Currency.BRL} 
+                                    onChange={e => setPatient({...patient, currency: Number(e.target.value) as Currency})} 
+                                    disabled={!isEditMode && isUpdating}
+                                >
+                                    <option value={Currency.BRL}>BRL (R$)</option>
+                                    <option value={Currency.USD}>USD ($)</option>
+                                    <option value={Currency.EUR}>EUR (€)</option>
+                                </select>
+                            </div>
+                            <div style={styles.inputGroup}>
+                                <label style={styles.label}>Valor</label>
+                                <input 
+                                    style={styles.input} 
+                                    value={patient.sessionPrice !== undefined ? formatCurrency(patient.sessionPrice, patient.currency || Currency.BRL) : ''}
+                                    onChange={e => setPatient({...patient, sessionPrice: parseCurrency(e.target.value)})} 
+                                    disabled={!isEditMode && isUpdating} 
+                                    placeholder="0,00"
+                                />
+                            </div>
+                            <div style={styles.inputGroup}>
+                                <label style={styles.label}>Meio de pagamento</label>
+                                <select 
+                                    style={styles.input} 
+                                    value={patient.paymentMethod || ''} 
+                                    onChange={e => setPatient({...patient, paymentMethod: Number(e.target.value) as PaymentMethod})} 
+                                    disabled={!isEditMode && isUpdating}
+                                >
+                                    <option value="">Selecione...</option>
+                                    <option value={PaymentMethod.CreditCard}>Cartão de crédito</option>
+                                    <option value={PaymentMethod.Pix}>Pix</option>
+                                    <option value={PaymentMethod.Cash}>Dinheiro</option>
+                                    <option value={PaymentMethod.Transfer}>Transferência</option>
+                                </select>
+                            </div>
+                        </div>
                     )}
-                </div>
-            ))}
-            {(!isUpdating || isEditMode) && (
-                <button type="button" style={styles.addContactBtn} onClick={() => handleAddEmergencyContact(isUpdating)}>+ Adicionar Contato de Emergência</button>
+
+                    {patient.packageType === PackageType.PerSessions && (
+                        <div style={styles.formGrid}>
+                            <div style={styles.inputGroup}>
+                                <label style={styles.label}>Moeda</label>
+                                <select 
+                                    style={styles.input} 
+                                    value={patient.currency || Currency.BRL} 
+                                    onChange={e => setPatient({...patient, currency: Number(e.target.value) as Currency})} 
+                                    disabled={!isEditMode && isUpdating}
+                                >
+                                    <option value={Currency.BRL}>BRL (R$)</option>
+                                    <option value={Currency.USD}>USD ($)</option>
+                                    <option value={Currency.EUR}>EUR (€)</option>
+                                </select>
+                            </div>
+                            <div style={styles.inputGroup}>
+                                <label style={styles.label}>Valor</label>
+                                <input 
+                                    style={styles.input} 
+                                    value={patient.sessionPrice !== undefined ? formatCurrency(patient.sessionPrice, patient.currency || Currency.BRL) : ''}
+                                    onChange={e => setPatient({...patient, sessionPrice: parseCurrency(e.target.value)})} 
+                                    disabled={!isEditMode && isUpdating} 
+                                    placeholder="0,00"
+                                />
+                            </div>
+                            <div style={styles.inputGroup}>
+                                <label style={styles.label}>Quantidade de sessões</label>
+                                <input 
+                                    type="number"
+                                    min="1"
+                                    style={styles.input} 
+                                    value={patient.sessionQuantity || ''}
+                                    onChange={e => setPatient({...patient, sessionQuantity: parseInt(e.target.value, 10)})} 
+                                    disabled={!isEditMode && isUpdating} 
+                                    placeholder="Ex: 4"
+                                />
+                            </div>
+                            <div style={styles.inputGroup}>
+                                <label style={styles.label}>Meio de pagamento</label>
+                                <select 
+                                    style={styles.input} 
+                                    value={patient.paymentMethod || ''} 
+                                    onChange={e => setPatient({...patient, paymentMethod: Number(e.target.value) as PaymentMethod})} 
+                                    disabled={!isEditMode && isUpdating}
+                                >
+                                    <option value="">Selecione...</option>
+                                    <option value={PaymentMethod.CreditCard}>Cartão de crédito</option>
+                                    <option value={PaymentMethod.Pix}>Pix</option>
+                                    <option value={PaymentMethod.Cash}>Dinheiro</option>
+                                    <option value={PaymentMethod.Transfer}>Transferência</option>
+                                </select>
+                            </div>
+                        </div>
+                    )}
+                </>
+            )}
+
+            {(!isUpdating || isEditMode || (patient.emergencyContacts && patient.emergencyContacts.length > 0)) && (
+                <>
+                    <h3 style={styles.sectionTitle}>Contatos de Emergência</h3>
+                    {(patient.emergencyContacts || []).map((contact, index) => (
+                        <div key={index} style={styles.emergencyContactCard}>
+                            <div style={styles.formGrid}>
+                                <div style={styles.inputGroup}>
+                                    <label style={styles.label}>Nome *</label>
+                                    <input required style={styles.input} value={contact.name} onChange={e => handleEmergencyContactChange(index, 'name', e.target.value, isUpdating)} disabled={!isEditMode && isUpdating} />
+                                </div>
+                                <div style={styles.inputGroup}>
+                                    <label style={styles.label}>Telefone *</label>
+                                    <input required style={styles.input} value={contact.phoneNumber} onChange={e => handleEmergencyContactChange(index, 'phoneNumber', formatPhone(e.target.value), isUpdating)} disabled={!isEditMode && isUpdating} placeholder="(11) 99999-9999" />
+                                </div>
+                                <div style={styles.inputGroup}>
+                                    <label style={styles.label}>Tipo</label>
+                                    <select style={styles.input} value={contact.type} onChange={e => handleEmergencyContactChange(index, 'type', Number(e.target.value) as ContactType, isUpdating)} disabled={!isEditMode && isUpdating}>
+                                        <option value={ContactType.Primary}>Primário</option>
+                                        <option value={ContactType.Secondary}>Secundário</option>
+                                        <option value={ContactType.LegalRepresentative}>Responsável Legal</option>
+                                        <option value={ContactType.Psychiatrist}>Psiquiatra</option>
+                                        <option value={ContactType.Other}>Outro</option>
+                                    </select>
+                                </div>
+                            </div>
+                            {(!isUpdating || isEditMode) && (
+                                <button type="button" style={styles.removeContactBtn} onClick={() => handleRemoveEmergencyContact(index, isUpdating)}>Remover Contato</button>
+                            )}
+                        </div>
+                    ))}
+                    {(!isUpdating || isEditMode) && (
+                        <button type="button" style={styles.addContactBtn} onClick={() => handleAddEmergencyContact(isUpdating)}>+ Adicionar Contato de Emergência</button>
+                    )}
+                </>
             )}
         </>
     );

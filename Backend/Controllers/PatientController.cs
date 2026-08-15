@@ -93,6 +93,11 @@ public class PatientController : ControllerBase
 
         patient.TreatmentStartDate = patient.TreatmentStartDate.ToUniversalTime();
         patient.DateOfBirth = patient.DateOfBirth.ToUniversalTime();
+        
+        if (patient.CustomBillingDate.HasValue)
+        {
+            patient.CustomBillingDate = patient.CustomBillingDate.Value.ToUniversalTime();
+        }
 
         if (patient.EmergencyContacts != null)
         {
@@ -129,6 +134,23 @@ public class PatientController : ControllerBase
         patient.Profession = inputPatient.Profession;
         patient.CountryOfResidence = inputPatient.CountryOfResidence;
         patient.Frequency = inputPatient.Frequency;
+
+        // Gestão Financeira
+        patient.PaymentType = inputPatient.PaymentType;
+        patient.Currency = inputPatient.Currency;
+        patient.SessionPrice = inputPatient.SessionPrice;
+        patient.PaymentMethod = inputPatient.PaymentMethod;
+        patient.PackageType = inputPatient.PackageType;
+        patient.BillingStartDateType = inputPatient.BillingStartDateType;
+        if (inputPatient.CustomBillingDate.HasValue)
+        {
+            patient.CustomBillingDate = inputPatient.CustomBillingDate.Value.ToUniversalTime();
+        }
+        else
+        {
+            patient.CustomBillingDate = null;
+        }
+        patient.SessionQuantity = inputPatient.SessionQuantity;
 
         // Update emergency contacts robustly
         var existingContacts = patient.EmergencyContacts.ToList();
