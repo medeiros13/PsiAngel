@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ENV } from '../../config/env';
 import { AuthContext } from '../../contexts/AuthContext';
 
@@ -171,6 +172,11 @@ const todayString = new Date().toISOString().split('T')[0];
 export function DashboardPage() {
     const authContext = useContext(AuthContext);
     const user = authContext?.user;
+    const logout = authContext?.logout;
+    const navigate = useNavigate();
+
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const userMenuRef = useRef<HTMLDivElement>(null);
 
     const [patients, setPatients] = useState<Patient[]>([]);
     const [loading, setLoading] = useState(true);
@@ -210,6 +216,23 @@ export function DashboardPage() {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isModalOpen, isViewModalOpen]);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+                setIsUserMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleLogout = async () => {
+        if (logout) {
+            await logout();
+            navigate('/');
+        }
+    };
 
     const fetchPatients = async () => {
         setLoading(true);
@@ -774,13 +797,33 @@ export function DashboardPage() {
                 <div style={styles.navLinks}>
                     <span style={styles.activeNavLink}>Pacientes</span>
                 </div>
-                <div style={styles.userProfile}>
+                <div style={styles.userProfile} ref={userMenuRef}>
                     {user && (
-                        <div style={styles.userInfo}>
+                        <div 
+                            style={{ ...styles.userInfo, cursor: 'pointer' }} 
+                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                        >
                             <span style={styles.userName}>{user.name}</span>
                             {user.pictureUrl && (
                                 <img src={user.pictureUrl} alt="Perfil" style={styles.userPicture} />
                             )}
+                        </div>
+                    )}
+                    {isUserMenuOpen && (
+                        <div style={styles.userDropdownMenu}>
+                            <button 
+                                style={styles.dropdownItem} 
+                                onClick={handleLogout}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-pink-light)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                    <polyline points="16 17 21 12 16 7"></polyline>
+                                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                                </svg>
+                                Sair
+                            </button>
                         </div>
                     )}
                 </div>
@@ -1035,6 +1078,34 @@ const styles = {
     userProfile: {
         display: 'flex',
         alignItems: 'center',
+        position: 'relative' as const,
+    },
+    userDropdownMenu: {
+        position: 'absolute' as const,
+        top: '120%',
+        right: 0,
+        backgroundColor: 'white',
+        borderRadius: '12px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+        padding: '0.5rem',
+        minWidth: '150px',
+        zIndex: 100,
+        border: '1px solid var(--color-pink-light-2)',
+    },
+    dropdownItem: {
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        padding: '0.6rem 1rem',
+        backgroundColor: 'transparent',
+        border: 'none',
+        borderRadius: '8px',
+        color: 'var(--color-text)',
+        fontSize: '0.95rem',
+        fontWeight: 600,
+        cursor: 'pointer',
+        transition: 'background-color 0.2s',
     },
     userInfo: {
         display: 'flex',
