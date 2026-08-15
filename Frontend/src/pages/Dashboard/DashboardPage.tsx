@@ -106,7 +106,9 @@ const emptyPatient: Patient = {
     countryOfResidence: '',
     frequency: PatientFrequency.Weekly,
     emergencyContacts: [],
-    currency: Currency.BRL // Padrão BRL
+    currency: Currency.BRL, // Padrão BRL
+    paymentType: PaymentType.PerSession,
+    paymentMethod: PaymentMethod.Pix
 };
 
 // Funções Utilitárias para Máscaras
