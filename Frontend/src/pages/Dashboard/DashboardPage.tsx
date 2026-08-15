@@ -113,6 +113,20 @@ export function DashboardPage() {
         fetchPatients();
     }, []);
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                if (isModalOpen) setIsModalOpen(false);
+                if (isViewModalOpen) {
+                    setIsViewModalOpen(false);
+                    setIsEditMode(false);
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isModalOpen, isViewModalOpen]);
+
     const fetchPatients = async () => {
         try {
             const response = await fetch(`${ENV.API_URL}/patients`, {
@@ -408,7 +422,7 @@ export function DashboardPage() {
                                         <div style={styles.patientAvatar}>{p.fullName.charAt(0).toUpperCase()}</div>
                                         <div style={styles.patientInfo}>
                                             <div style={styles.patientName}>{p.socialName || p.fullName}</div>
-                                            <div style={styles.patientDetail}>Início: {new Date(p.treatmentStartDate).toLocaleDateString('pt-BR')}</div>
+                                            <div style={styles.patientDetail}>Início: {new Date(p.treatmentStartDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</div>
                                         </div>
                                     </div>
                                 ))}
@@ -463,8 +477,8 @@ export function DashboardPage() {
 
             {/* Modal de Cadastro de Paciente */}
             {isModalOpen && (
-                <div style={styles.modalOverlay}>
-                    <div style={styles.modalContent}>
+                <div style={styles.modalOverlay} onClick={() => setIsModalOpen(false)}>
+                    <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
                         <h2 style={styles.modalTitle}>Adicionar Novo Paciente</h2>
                         <form onSubmit={handleAddPatient} style={styles.modalForm}>
                             {renderPatientFormFields(newPatient, setNewPatient, false)}
@@ -480,8 +494,8 @@ export function DashboardPage() {
 
             {/* Modal de Visualização/Edição de Paciente */}
             {isViewModalOpen && selectedPatient && (
-                <div style={styles.modalOverlay}>
-                    <div style={styles.modalContent}>
+                <div style={styles.modalOverlay} onClick={() => { setIsViewModalOpen(false); setIsEditMode(false); }}>
+                    <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
                         <div style={styles.modalHeader}>
                             <h2 style={{ ...styles.modalTitle, marginBottom: 0 }}>{isEditMode ? 'Editar Paciente' : 'Detalhes do Paciente'}</h2>
                             <button type="button" onClick={() => setIsEditMode(!isEditMode)} style={styles.editToggleBtn}>
@@ -510,10 +524,10 @@ export function DashboardPage() {
 const styles = {
     pageContainer: {
         minHeight: '100vh',
-        backgroundColor: '#eef2fb',
-        backgroundImage: 'radial-gradient(circle at 10% 20%, rgb(238, 235, 255) 0%, rgb(240, 248, 255) 90%)',
-        fontFamily: "'Inter', sans-serif",
-        color: '#333',
+        backgroundColor: 'var(--color-background)',
+        backgroundImage: 'radial-gradient(circle at 10% 20%, var(--color-pink-light-2) 0%, var(--color-background) 90%)',
+        fontFamily: 'var(--sans)',
+        color: 'var(--color-text)',
         display: 'flex',
         flexDirection: 'column' as const,
     },
@@ -522,14 +536,15 @@ const styles = {
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: '0.8rem 2rem',
-        background: 'rgba(255, 255, 255, 0.6)',
+        background: 'rgba(255, 255, 255, 0.7)',
         backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.3)',
+        borderBottom: '1px solid var(--color-pink-light-1)',
     },
     logo: {
-        fontSize: '1.4rem',
+        fontSize: '1.8rem',
+        fontFamily: 'var(--casual)',
         fontWeight: 'bold',
-        color: '#6b4c9a',
+        color: 'var(--color-secondary)',
     },
     navLinks: {
         display: 'flex',
@@ -537,14 +552,14 @@ const styles = {
     },
     navLink: {
         cursor: 'pointer',
-        color: '#666',
+        color: 'var(--color-text)',
         fontWeight: 500,
     },
     activeNavLink: {
         cursor: 'pointer',
-        color: '#6b4c9a',
+        color: 'var(--color-primary)',
         fontWeight: 700,
-        borderBottom: '2px solid #6b4c9a',
+        borderBottom: '2px solid var(--color-secondary)',
     },
     userProfile: {
         display: 'flex',
@@ -558,7 +573,7 @@ const styles = {
     userName: {
         fontWeight: 'bold',
         fontSize: '0.95rem',
-        color: '#555',
+        color: 'var(--color-text)',
     },
     userPicture: {
         width: '40px',
@@ -586,14 +601,14 @@ const styles = {
     },
     rightPane: {
         flex: 1.2,
-        background: 'rgba(255, 255, 255, 0.5)',
+        background: 'rgba(255, 255, 255, 0.6)',
         backdropFilter: 'blur(15px)',
         borderRadius: '24px',
         padding: '1.5rem',
         display: 'flex',
         flexDirection: 'column' as const,
         gap: '1rem',
-        boxShadow: '0 8px 32px rgba(107, 76, 154, 0.05)',
+        boxShadow: '0 8px 32px rgba(221, 78, 119, 0.05)',
         border: '1px solid rgba(255, 255, 255, 0.8)',
     },
     searchSection: {
@@ -608,6 +623,7 @@ const styles = {
         boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02), 0 2px 8px rgba(0,0,0,0.05)',
         fontSize: '1rem',
         outline: 'none',
+        fontFamily: 'var(--sans)',
     },
     listControls: {
         display: 'flex',
@@ -622,7 +638,8 @@ const styles = {
         boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
         cursor: 'pointer',
         fontWeight: 500,
-        color: '#555',
+        color: 'var(--color-primary)',
+        fontFamily: 'var(--sans)',
     },
     actionButtons: {
         display: 'flex',
@@ -633,19 +650,20 @@ const styles = {
         padding: '0.8rem',
         borderRadius: '24px',
         border: 'none',
-        background: 'linear-gradient(135deg, #6b4c9a, #4a7ab5)',
+        background: 'linear-gradient(135deg, var(--color-magenta), var(--color-pink-medium))',
         color: 'white',
         fontWeight: 'bold',
         cursor: 'pointer',
-        boxShadow: '0 4px 12px rgba(107, 76, 154, 0.3)',
+        boxShadow: '0 4px 12px rgba(221, 78, 119, 0.3)',
+        fontFamily: 'var(--sans)',
     },
     patientsListContainer: {
         flex: 1,
-        background: 'rgba(255, 255, 255, 0.6)',
+        background: 'rgba(255, 255, 255, 0.7)',
         backdropFilter: 'blur(20px)',
         borderRadius: '24px',
         padding: '2rem',
-        boxShadow: '0 8px 32px rgba(107, 76, 154, 0.05)',
+        boxShadow: '0 8px 32px rgba(221, 78, 119, 0.05)',
         border: '1px solid rgba(255, 255, 255, 0.8)',
         display: 'flex',
         flexDirection: 'column' as const,
@@ -657,7 +675,7 @@ const styles = {
     },
     emptyStateIcon: {
         fontSize: '3rem',
-        background: '#e0d4f5',
+        background: 'var(--color-pink-light-2)',
         width: '80px',
         height: '80px',
         borderRadius: '50%',
@@ -665,16 +683,16 @@ const styles = {
         alignItems: 'center',
         justifyContent: 'center',
         margin: '0 auto 1.5rem',
-        color: '#6b4c9a',
+        color: 'var(--color-magenta)',
     },
     emptyStateTitle: {
         fontSize: '1.8rem',
-        color: '#333',
+        color: 'var(--color-primary)',
         marginBottom: '1rem',
-        fontFamily: "'Playfair Display', serif",
+        fontFamily: 'var(--heading)',
     },
     emptyStateDesc: {
-        color: '#666',
+        color: 'var(--color-text)',
         lineHeight: 1.5,
         marginBottom: '2rem',
     },
@@ -682,11 +700,12 @@ const styles = {
         padding: '0.8rem 1.5rem',
         borderRadius: '24px',
         border: 'none',
-        background: '#6b4c9a',
+        background: 'var(--color-magenta)',
         color: 'white',
         fontWeight: 'bold',
         cursor: 'pointer',
-        boxShadow: '0 4px 12px rgba(107, 76, 154, 0.3)',
+        boxShadow: '0 4px 12px rgba(221, 78, 119, 0.3)',
+        fontFamily: 'var(--sans)',
     },
     patientList: {
         display: 'flex',
@@ -707,8 +726,8 @@ const styles = {
         width: '40px',
         height: '40px',
         borderRadius: '50%',
-        background: '#e0d4f5',
-        color: '#6b4c9a',
+        background: 'var(--color-pink-light-2)',
+        color: 'var(--color-primary)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -719,11 +738,12 @@ const styles = {
     },
     patientName: {
         fontWeight: 'bold',
-        color: '#333',
+        color: 'var(--color-primary)',
+        fontFamily: 'var(--heading)',
     },
     patientDetail: {
         fontSize: '0.85rem',
-        color: '#888',
+        color: 'var(--color-text)',
     },
     agendaTopControls: {
         display: 'flex',
@@ -736,12 +756,13 @@ const styles = {
         border: 'none',
         background: 'white',
         fontWeight: 500,
-        color: '#555',
+        color: 'var(--color-primary)',
         boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
         cursor: 'pointer',
+        fontFamily: 'var(--sans)',
     },
     vacationBtn: {
-        background: 'linear-gradient(135deg, #a388d4, #8fa3d6)',
+        background: 'linear-gradient(135deg, var(--color-pink-light-1), var(--color-pink-medium))',
         color: 'white',
     },
     agendaSubControls: {
@@ -755,9 +776,10 @@ const styles = {
         border: 'none',
         background: 'white',
         fontWeight: 500,
-        color: '#555',
+        color: 'var(--color-primary)',
         boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
         cursor: 'pointer',
+        fontFamily: 'var(--sans)',
     },
     calendarContainer: {
         background: 'white',
@@ -780,19 +802,21 @@ const styles = {
     },
     navBtn: {
         background: 'none',
-        border: '1px solid #eee',
+        border: '1px solid var(--color-pink-light-1)',
         borderRadius: '50%',
         width: '30px',
         height: '30px',
         cursor: 'pointer',
+        color: 'var(--color-primary)',
     },
     calendarTitle: {
         fontWeight: 'bold',
-        color: '#333',
+        color: 'var(--color-primary)',
+        fontFamily: 'var(--heading)',
     },
     viewToggle: {
         display: 'flex',
-        background: '#f5f5f5',
+        background: 'var(--color-pink-baby)',
         borderRadius: '20px',
         padding: '0.2rem',
     },
@@ -802,30 +826,33 @@ const styles = {
         padding: '0.4rem 0.8rem',
         borderRadius: '16px',
         cursor: 'pointer',
-        color: '#666',
+        color: 'var(--color-primary)',
         fontSize: '0.85rem',
+        fontFamily: 'var(--sans)',
     },
     activeViewBtn: {
-        background: '#5a8dee',
+        background: 'var(--color-magenta)',
         color: 'white',
         fontWeight: 'bold',
     },
     calendarGridPlaceholder: {
         flex: 1,
-        border: '1px dashed #ccc',
+        border: '1px dashed var(--color-pink-light-1)',
         borderRadius: '12px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#fafafa',
+        background: 'var(--color-pink-baby)',
     },
     calendarEmptyText: {
-        color: '#aaa',
+        color: 'var(--color-magenta)',
+        fontFamily: 'var(--casual)',
+        fontSize: '1.5rem',
     },
     modalOverlay: {
         position: 'fixed' as const,
         top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(20, 38, 69, 0.5)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -849,25 +876,27 @@ const styles = {
     },
     modalTitle: {
         marginTop: 0,
-        color: '#333',
-        fontFamily: "'Playfair Display', serif",
+        color: 'var(--color-primary)',
+        fontFamily: 'var(--heading)',
     },
     editToggleBtn: {
         padding: '0.5rem 1rem',
         borderRadius: '16px',
-        border: '1px solid #6b4c9a',
+        border: '1px solid var(--color-magenta)',
         background: 'transparent',
-        color: '#6b4c9a',
+        color: 'var(--color-magenta)',
         fontWeight: 'bold',
         cursor: 'pointer',
+        fontFamily: 'var(--sans)',
     },
     sectionTitle: {
         fontSize: '1.1rem',
-        color: '#6b4c9a',
-        borderBottom: '1px solid #eee',
+        color: 'var(--color-secondary)',
+        borderBottom: '1px solid var(--color-pink-light-1)',
         paddingBottom: '0.5rem',
         marginTop: '1.5rem',
         marginBottom: '1rem',
+        fontFamily: 'var(--heading)',
     },
     formGrid: {
         display: 'grid',
@@ -885,44 +914,49 @@ const styles = {
     },
     label: {
         fontSize: '0.85rem',
-        color: '#555',
+        color: 'var(--color-primary)',
         fontWeight: 'bold',
+        fontFamily: 'var(--sans)',
     },
     input: {
         padding: '0.7rem',
         borderRadius: '12px',
-        border: '1px solid #ddd',
+        border: '1px solid var(--color-pink-light-1)',
         fontSize: '0.95rem',
         outline: 'none',
-        background: '#fcfcfc',
+        background: '#fff',
+        fontFamily: 'var(--sans)',
+        color: 'var(--color-text)',
     },
     emergencyContactCard: {
-        border: '1px solid #eee',
+        border: '1px solid var(--color-pink-light-2)',
         borderRadius: '12px',
         padding: '1rem',
         marginBottom: '1rem',
-        background: '#f9f9fa',
+        background: 'var(--color-pink-baby)',
     },
     addContactBtn: {
         padding: '0.6rem 1rem',
         borderRadius: '12px',
-        border: '1px dashed #6b4c9a',
+        border: '1px dashed var(--color-magenta)',
         background: 'transparent',
-        color: '#6b4c9a',
+        color: 'var(--color-magenta)',
         fontWeight: 'bold',
         cursor: 'pointer',
         marginTop: '0.5rem',
         alignSelf: 'flex-start' as const,
+        fontFamily: 'var(--sans)',
     },
     removeContactBtn: {
         padding: '0.4rem 0.8rem',
         borderRadius: '8px',
         border: 'none',
-        background: '#ffeeee',
+        background: '#fff0f0',
         color: '#d9534f',
         fontWeight: 'bold',
         cursor: 'pointer',
         marginTop: '1rem',
+        fontFamily: 'var(--sans)',
     },
     modalActions: {
         display: 'flex',
@@ -933,20 +967,22 @@ const styles = {
     cancelBtn: {
         padding: '0.8rem 1.5rem',
         borderRadius: '24px',
-        border: 'none',
-        background: '#f0f0f0',
-        color: '#555',
+        border: '1px solid var(--color-pink-light-1)',
+        background: 'var(--color-pink-baby)',
+        color: 'var(--color-primary)',
         fontWeight: 'bold',
         cursor: 'pointer',
+        fontFamily: 'var(--sans)',
     },
     saveBtn: {
         padding: '0.8rem 1.5rem',
         borderRadius: '24px',
         border: 'none',
-        background: '#6b4c9a',
+        background: 'var(--color-magenta)',
         color: 'white',
         fontWeight: 'bold',
         cursor: 'pointer',
+        fontFamily: 'var(--sans)',
     },
     deleteBtn: {
         padding: '0.8rem 1.5rem',
@@ -956,5 +992,6 @@ const styles = {
         color: '#d9534f',
         fontWeight: 'bold',
         cursor: 'pointer',
+        fontFamily: 'var(--sans)',
     }
 };
