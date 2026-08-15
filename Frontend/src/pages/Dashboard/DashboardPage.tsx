@@ -359,7 +359,7 @@ export function DashboardPage() {
             <h3 style={styles.sectionTitle}>Dados Pessoais</h3>
             <div style={styles.formGrid}>
                 <div style={styles.inputGroup}>
-                    <label style={styles.label}>Nome Completo *</label>
+                    <label style={styles.label}>Nome Completo{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                     <input required style={styles.input} value={patient.fullName} onChange={e => setPatient({...patient, fullName: e.target.value})} disabled={!isEditMode && isUpdating} />
                 </div>
                 <div style={styles.inputGroup}>
@@ -371,11 +371,11 @@ export function DashboardPage() {
                     <input type="email" style={styles.input} value={patient.email || ''} onChange={e => setPatient({...patient, email: e.target.value})} disabled={!isEditMode && isUpdating} />
                 </div>
                 <div style={styles.inputGroup}>
-                    <label style={styles.label}>Telefone *</label>
+                    <label style={styles.label}>Telefone{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                     <input required style={styles.input} value={patient.phoneNumber} onChange={e => setPatient({...patient, phoneNumber: formatPhone(e.target.value)})} disabled={!isEditMode && isUpdating} placeholder="(11) 99999-9999 ou +1..." />
                 </div>
                 <div style={styles.inputGroup}>
-                    <label style={styles.label}>Data de Nascimento *</label>
+                    <label style={styles.label}>Data de Nascimento{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                     <input type="date" required style={styles.input} value={patient.dateOfBirth} onChange={e => setPatient({...patient, dateOfBirth: e.target.value})} disabled={!isEditMode && isUpdating} />
                 </div>
                 <div style={styles.inputGroup}>
@@ -403,7 +403,7 @@ export function DashboardPage() {
             <h3 style={styles.sectionTitle}>Dados do Tratamento</h3>
             <div style={styles.formGrid}>
                 <div style={styles.inputGroup}>
-                    <label style={styles.label}>Início do Tratamento *</label>
+                    <label style={styles.label}>Início do Tratamento{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                     <input type="date" required style={styles.input} value={patient.treatmentStartDate} onChange={e => setPatient({...patient, treatmentStartDate: e.target.value})} disabled={!isEditMode && isUpdating} />
                 </div>
                 <div style={styles.inputGroup}>
@@ -419,7 +419,7 @@ export function DashboardPage() {
             <h3 style={styles.sectionTitle}>Gestão Financeira</h3>
             <div style={{ ...styles.formGrid, gridTemplateColumns: '1fr' }}>
                 <div style={{ ...styles.inputGroup, alignItems: 'center' }}>
-                    <label style={styles.label}>Tipo de Pagamento *</label>
+                    <label style={styles.label}>Tipo de Pagamento{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                     <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', justifyContent: 'center' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
                             <input 
@@ -452,7 +452,7 @@ export function DashboardPage() {
             {patient.paymentType === PaymentType.PerSession && (
                 <div style={styles.formGrid}>
                     <div style={styles.inputGroup}>
-                        <label style={styles.label}>Moeda *</label>
+                        <label style={styles.label}>Moeda{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                         <select 
                             required
                             style={styles.input} 
@@ -466,7 +466,7 @@ export function DashboardPage() {
                         </select>
                     </div>
                     <div style={styles.inputGroup}>
-                        <label style={styles.label}>Valor da sessão *</label>
+                        <label style={styles.label}>Valor da sessão{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                         <input 
                             required
                             style={styles.input} 
@@ -477,7 +477,7 @@ export function DashboardPage() {
                         />
                     </div>
                     <div style={styles.inputGroup}>
-                        <label style={styles.label}>Meio de pagamento *</label>
+                        <label style={styles.label}>Meio de pagamento{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                         <select 
                             required
                             style={styles.input} 
@@ -499,7 +499,7 @@ export function DashboardPage() {
                 <>
                     <div style={{ ...styles.formGrid, gridTemplateColumns: '1fr', marginTop: '1rem' }}>
                         <div style={{ ...styles.inputGroup, alignItems: 'center' }}>
-                            <label style={styles.label}>Tipo de Pacote *</label>
+                            <label style={styles.label}>Tipo de Pacote{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                             <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', justifyContent: 'center' }}>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
                                     <input 
@@ -532,7 +532,7 @@ export function DashboardPage() {
                     {patient.packageType === PackageType.Monthly && (
                         <div style={styles.formGrid}>
                             <div style={{ ...styles.inputGroup, gridColumn: '1 / -1', alignItems: 'center' }}>
-                                <label style={styles.label}>Início da cobrança *</label>
+                                <label style={styles.label}>Início da cobrança{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                                 <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', justifyContent: 'center' }}>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
                                         <input 
@@ -563,7 +563,7 @@ export function DashboardPage() {
                             
                             {patient.billingStartDateType === BillingStartDateType.CustomDate && (
                                 <div style={styles.inputGroup}>
-                                    <label style={styles.label}>Data da cobrança *</label>
+                                    <label style={styles.label}>Data da cobrança{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                                     <input 
                                         required
                                         type="date"
@@ -576,7 +576,7 @@ export function DashboardPage() {
                             )}
 
                             <div style={styles.inputGroup}>
-                                <label style={styles.label}>Moeda *</label>
+                                <label style={styles.label}>Moeda{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                                 <select 
                                     required
                                     style={styles.input} 
@@ -590,7 +590,7 @@ export function DashboardPage() {
                                 </select>
                             </div>
                             <div style={styles.inputGroup}>
-                                <label style={styles.label}>Valor *</label>
+                                <label style={styles.label}>Valor{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                                 <input 
                                     required
                                     style={styles.input} 
@@ -601,7 +601,7 @@ export function DashboardPage() {
                                 />
                             </div>
                             <div style={styles.inputGroup}>
-                                <label style={styles.label}>Meio de pagamento *</label>
+                                <label style={styles.label}>Meio de pagamento{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                                 <select 
                                     required
                                     style={styles.input} 
@@ -622,7 +622,7 @@ export function DashboardPage() {
                     {patient.packageType === PackageType.PerSessions && (
                         <div style={styles.formGrid}>
                             <div style={styles.inputGroup}>
-                                <label style={styles.label}>Moeda *</label>
+                                <label style={styles.label}>Moeda{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                                 <select 
                                     required
                                     style={styles.input} 
@@ -636,7 +636,7 @@ export function DashboardPage() {
                                 </select>
                             </div>
                             <div style={styles.inputGroup}>
-                                <label style={styles.label}>Valor *</label>
+                                <label style={styles.label}>Valor{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                                 <input 
                                     required
                                     style={styles.input} 
@@ -647,7 +647,7 @@ export function DashboardPage() {
                                 />
                             </div>
                             <div style={styles.inputGroup}>
-                                <label style={styles.label}>Quantidade de sessões *</label>
+                                <label style={styles.label}>Quantidade de sessões{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                                 <input 
                                     required
                                     type="number"
@@ -660,7 +660,7 @@ export function DashboardPage() {
                                 />
                             </div>
                             <div style={styles.inputGroup}>
-                                <label style={styles.label}>Meio de pagamento *</label>
+                                <label style={styles.label}>Meio de pagamento{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                                 <select 
                                     required
                                     style={styles.input} 
@@ -687,11 +687,11 @@ export function DashboardPage() {
                         <div key={index} style={styles.emergencyContactCard}>
                             <div style={styles.formGrid}>
                                 <div style={styles.inputGroup}>
-                                    <label style={styles.label}>Nome *</label>
+                                    <label style={styles.label}>Nome{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                                     <input required style={styles.input} value={contact.name} onChange={e => handleEmergencyContactChange(index, 'name', e.target.value, isUpdating)} disabled={!isEditMode && isUpdating} />
                                 </div>
                                 <div style={styles.inputGroup}>
-                                    <label style={styles.label}>Telefone *</label>
+                                    <label style={styles.label}>Telefone{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                                     <input required style={styles.input} value={contact.phoneNumber} onChange={e => handleEmergencyContactChange(index, 'phoneNumber', formatPhone(e.target.value), isUpdating)} disabled={!isEditMode && isUpdating} placeholder="(11) 99999-9999" />
                                 </div>
                                 <div style={styles.inputGroup}>
@@ -720,6 +720,19 @@ export function DashboardPage() {
 
     return (
         <div style={styles.pageContainer}>
+            <style>{`
+                input:disabled, select:disabled {
+                    background-color: var(--color-pink-baby, #fdf2f8) !important;
+                    color: #888 !important;
+                    -webkit-text-fill-color: #888 !important;
+                    opacity: 1 !important;
+                    cursor: not-allowed !important;
+                }
+                input:disabled::placeholder, textarea:disabled::placeholder {
+                    color: transparent !important;
+                    -webkit-text-fill-color: transparent !important;
+                }
+            `}</style>
             <header style={styles.topBar}>
                 <div style={styles.logo}>PsiAngel</div>
                 <div style={styles.navLinks}>
