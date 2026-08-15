@@ -417,9 +417,9 @@ export function DashboardPage() {
 
             <h3 style={styles.sectionTitle}>Gestão Financeira</h3>
             <div style={{ ...styles.formGrid, gridTemplateColumns: '1fr' }}>
-                <div style={styles.inputGroup}>
+                <div style={{ ...styles.inputGroup, alignItems: 'center' }}>
                     <label style={styles.label}>Tipo de Pagamento</label>
-                    <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                    <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', justifyContent: 'center' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
                             <input 
                                 type="radio" 
@@ -492,9 +492,9 @@ export function DashboardPage() {
             {patient.paymentType === PaymentType.Package && (
                 <>
                     <div style={{ ...styles.formGrid, gridTemplateColumns: '1fr', marginTop: '1rem' }}>
-                        <div style={styles.inputGroup}>
+                        <div style={{ ...styles.inputGroup, alignItems: 'center' }}>
                             <label style={styles.label}>Tipo de Pacote</label>
-                            <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', justifyContent: 'center' }}>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
                                     <input 
                                         type="radio" 
@@ -523,18 +523,32 @@ export function DashboardPage() {
 
                     {patient.packageType === PackageType.Monthly && (
                         <div style={styles.formGrid}>
-                            <div style={styles.inputGroup}>
+                            <div style={{ ...styles.inputGroup, gridColumn: '1 / -1', alignItems: 'center' }}>
                                 <label style={styles.label}>Início da cobrança</label>
-                                <select 
-                                    style={styles.input} 
-                                    value={patient.billingStartDateType || ''} 
-                                    onChange={e => setPatient({...patient, billingStartDateType: Number(e.target.value) as BillingStartDateType})} 
-                                    disabled={!isEditMode && isUpdating}
-                                >
-                                    <option value="">Selecione...</option>
-                                    <option value={BillingStartDateType.CurrentMonth}>Mensalidade atual</option>
-                                    <option value={BillingStartDateType.CustomDate}>Definir data</option>
-                                </select>
+                                <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', justifyContent: 'center' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
+                                        <input 
+                                            type="radio" 
+                                            name="billingStartDateType" 
+                                            value={BillingStartDateType.CurrentMonth}
+                                            checked={patient.billingStartDateType === BillingStartDateType.CurrentMonth}
+                                            onChange={() => setPatient({ ...patient, billingStartDateType: BillingStartDateType.CurrentMonth, customBillingDate: undefined })}
+                                            disabled={!isEditMode && isUpdating}
+                                        />
+                                        Mês atual
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
+                                        <input 
+                                            type="radio" 
+                                            name="billingStartDateType" 
+                                            value={BillingStartDateType.CustomDate}
+                                            checked={patient.billingStartDateType === BillingStartDateType.CustomDate}
+                                            onChange={() => setPatient({ ...patient, billingStartDateType: BillingStartDateType.CustomDate })}
+                                            disabled={!isEditMode && isUpdating}
+                                        />
+                                        Definir data
+                                    </label>
+                                </div>
                             </div>
                             
                             {patient.billingStartDateType === BillingStartDateType.CustomDate && (
