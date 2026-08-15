@@ -81,7 +81,7 @@ export interface Patient {
     countryOfResidence?: string;
     frequency: PatientFrequency;
     emergencyContacts: EmergencyContact[];
-    
+
     // Gestão Financeira
     paymentType?: PaymentType;
     currency?: Currency;
@@ -119,26 +119,36 @@ const formatCpf = (value: string) => {
         .replace(/(-\d{2})\d+?$/, '$1'); // Limita o tamanho
 };
 
-const formatPhone = (value: string) => {
-    // Permite que o usuário digite '+' no começo para números internacionais, ignorando a máscara local
-    if (value.startsWith('+')) return value; 
-    
-    const v = value.replace(/\D/g, '');
-    if (v.length <= 10) {
-        return v
-            .replace(/(\d{2})(\d)/, '($1) $2')
-            .replace(/(\d{4})(\d)/, '$1-$2')
-            .substring(0, 14); // Padrão: (99) 9999-9999
-    }
-    return v
-        .replace(/(\d{2})(\d)/, '($1) $2')
-        .replace(/(\d{5})(\d)/, '$1-$2')
-        .substring(0, 15); // Padrão: (99) 99999-9999
+const isValidCpf = (cpf: string) => {
+    cpf = cpf.replace(/\D/g, '');
+    if (!cpf) return true; // Permite vazio
+    if (cpf.length !== 11) return false;
+    if (new Set(cpf.split('')).size === 1) return false;
+
+    let sum = 0;
+    let remainder;
+
+    for (let i = 1; i <= 9; i++) 
+        sum = sum + parseInt(cpf.substring(i-1, i)) * (11 - i);
+    remainder = (sum * 10) % 11;
+
+    if ((remainder === 10) || (remainder === 11)) remainder = 0;
+    if (remainder !== parseInt(cpf.substring(9, 10))) return false;
+
+    sum = 0;
+    for (let i = 1; i <= 10; i++) 
+        sum = sum + parseInt(cpf.substring(i-1, i)) * (12 - i);
+    remainder = (sum * 10) % 11;
+
+    if ((remainder === 10) || (remainder === 11)) remainder = 0;
+    if (remainder !== parseInt(cpf.substring(10, 11))) return false;
+
+    return true;
 };
 
 const formatCurrency = (value: number | undefined, currency: Currency | undefined) => {
     if (value === undefined || isNaN(value)) return '';
-    
+
     if (currency === Currency.USD) {
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
     } else if (currency === Currency.EUR) {
@@ -154,6 +164,8 @@ const parseCurrency = (formattedValue: string) => {
     return parseInt(digits, 10) / 100;
 };
 
+const todayString = new Date().toISOString().split('T')[0];
+
 export function DashboardPage() {
     const authContext = useContext(AuthContext);
     const user = authContext?.user;
@@ -166,7 +178,7 @@ export function DashboardPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    
+
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newPatient, setNewPatient] = useState<Patient>(emptyPatient);
@@ -209,7 +221,7 @@ export function DashboardPage() {
             }
             queryParams.append('sortBy', sortBy);
             queryParams.append('sortDesc', sortDesc.toString());
-            
+
             const response = await fetch(`${ENV.API_URL}/patients?${queryParams.toString()}`, {
                 credentials: 'include'
             });
@@ -228,6 +240,12 @@ export function DashboardPage() {
 
     const handleAddPatient = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (newPatient.cpf && !isValidCpf(newPatient.cpf)) {
+            alert("O CPF informado é inválido.");
+            return;
+        }
+
         try {
             const response = await fetch(`${ENV.API_URL}/patients`, {
                 method: 'POST',
@@ -235,12 +253,18 @@ export function DashboardPage() {
                 credentials: 'include',
                 body: JSON.stringify(newPatient)
             });
-            
+
             if (response.ok) {
                 setIsModalOpen(false);
                 fetchPatients(); // Recarrega a lista
                 setNewPatient(emptyPatient);
             } else {
+                const errorData = await response.json().catch(() => null);
+                if (errorData && errorData.message) {
+                    alert(errorData.message);
+                } else {
+                    alert("Falha ao salvar paciente.");
+                }
                 console.error("Falha ao salvar paciente");
             }
         } catch (error) {
@@ -251,6 +275,12 @@ export function DashboardPage() {
     const handleUpdatePatient = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedPatient?.id) return;
+
+        if (selectedPatient.cpf && !isValidCpf(selectedPatient.cpf)) {
+            alert("O CPF informado é inválido.");
+            return;
+        }
+
         try {
             const response = await fetch(`${ENV.API_URL}/patients/${selectedPatient.id}`, {
                 method: 'PUT',
@@ -258,12 +288,18 @@ export function DashboardPage() {
                 credentials: 'include',
                 body: JSON.stringify(selectedPatient)
             });
-            
+
             if (response.ok) {
                 setIsViewModalOpen(false);
                 setIsEditMode(false);
                 fetchPatients();
             } else {
+                const errorData = await response.json().catch(() => null);
+                if (errorData && errorData.message) {
+                    alert(errorData.message);
+                } else {
+                    alert("Falha ao atualizar paciente.");
+                }
                 console.error("Falha ao atualizar paciente");
             }
         } catch (error) {
@@ -273,14 +309,13 @@ export function DashboardPage() {
 
     const handleDeletePatient = async () => {
         if (!selectedPatient?.id) return;
-        if (!window.confirm('Tem certeza que deseja remover este paciente? Esta ação não pode ser desfeita.')) return;
-        
+
         try {
             const response = await fetch(`${ENV.API_URL}/patients/${selectedPatient.id}`, {
                 method: 'DELETE',
                 credentials: 'include'
             });
-            
+
             if (response.ok) {
                 setIsViewModalOpen(false);
                 fetchPatients();
@@ -293,9 +328,8 @@ export function DashboardPage() {
     };
 
     const openViewModal = (patient: Patient) => {
-        // Formatar datas para o input type="date" (YYYY-MM-DD)
         const formatForDateInput = (isoDate: string) => isoDate ? isoDate.split('T')[0] : '';
-        
+
         setSelectedPatient({
             ...patient,
             dateOfBirth: formatForDateInput(patient.dateOfBirth),
@@ -312,7 +346,7 @@ export function DashboardPage() {
             phoneNumber: '',
             type: ContactType.Primary
         };
-        
+
         if (isUpdating && selectedPatient) {
             setSelectedPatient({
                 ...selectedPatient,
@@ -360,31 +394,31 @@ export function DashboardPage() {
             <div style={styles.formGrid}>
                 <div style={styles.inputGroup}>
                     <label style={styles.label}>Nome Completo{(!isEditMode && isUpdating) ? '' : ' *'}</label>
-                    <input required style={styles.input} value={patient.fullName} onChange={e => setPatient({...patient, fullName: e.target.value})} disabled={!isEditMode && isUpdating} />
+                    <input required style={styles.input} value={patient.fullName} onChange={e => setPatient({ ...patient, fullName: e.target.value })} disabled={!isEditMode && isUpdating} />
                 </div>
                 <div style={styles.inputGroup}>
                     <label style={styles.label}>Nome Social</label>
-                    <input style={styles.input} value={patient.socialName || ''} onChange={e => setPatient({...patient, socialName: e.target.value})} disabled={!isEditMode && isUpdating} />
+                    <input style={styles.input} value={patient.socialName || ''} onChange={e => setPatient({ ...patient, socialName: e.target.value })} disabled={!isEditMode && isUpdating} />
                 </div>
                 <div style={styles.inputGroup}>
                     <label style={styles.label}>E-mail</label>
-                    <input type="email" style={styles.input} value={patient.email || ''} onChange={e => setPatient({...patient, email: e.target.value})} disabled={!isEditMode && isUpdating} />
+                    <input type="email" style={styles.input} value={patient.email || ''} onChange={e => setPatient({ ...patient, email: e.target.value })} disabled={!isEditMode && isUpdating} />
                 </div>
                 <div style={styles.inputGroup}>
                     <label style={styles.label}>Telefone{(!isEditMode && isUpdating) ? '' : ' *'}</label>
-                    <input required style={styles.input} value={patient.phoneNumber} onChange={e => setPatient({...patient, phoneNumber: formatPhone(e.target.value)})} disabled={!isEditMode && isUpdating} placeholder="(11) 99999-9999 ou +1..." />
+                    <input required style={styles.input} value={patient.phoneNumber} onChange={e => setPatient({ ...patient, phoneNumber: e.target.value })} disabled={!isEditMode && isUpdating} placeholder="(11) 99999-9999 ou +1..." />
                 </div>
                 <div style={styles.inputGroup}>
                     <label style={styles.label}>Data de Nascimento{(!isEditMode && isUpdating) ? '' : ' *'}</label>
-                    <input type="date" required style={styles.input} value={patient.dateOfBirth} onChange={e => setPatient({...patient, dateOfBirth: e.target.value})} disabled={!isEditMode && isUpdating} />
+                    <input type="date" required max={todayString} style={styles.input} value={patient.dateOfBirth} onChange={e => setPatient({ ...patient, dateOfBirth: e.target.value })} disabled={!isEditMode && isUpdating} />
                 </div>
                 <div style={styles.inputGroup}>
                     <label style={styles.label}>CPF</label>
-                    <input style={styles.input} value={patient.cpf || ''} onChange={e => setPatient({...patient, cpf: formatCpf(e.target.value)})} disabled={!isEditMode && isUpdating} placeholder="000.000.000-00" />
+                    <input style={styles.input} value={patient.cpf || ''} onChange={e => setPatient({ ...patient, cpf: formatCpf(e.target.value) })} disabled={!isEditMode && isUpdating} placeholder="000.000.000-00" />
                 </div>
                 <div style={styles.inputGroup}>
                     <label style={styles.label}>Gênero</label>
-                    <select style={styles.input} value={patient.gender} onChange={e => setPatient({...patient, gender: Number(e.target.value) as Gender})} disabled={!isEditMode && isUpdating}>
+                    <select style={styles.input} value={patient.gender} onChange={e => setPatient({ ...patient, gender: Number(e.target.value) as Gender })} disabled={!isEditMode && isUpdating}>
                         <option value={Gender.Male}>Masculino</option>
                         <option value={Gender.Female}>Feminino</option>
                         <option value={Gender.Others}>Outros</option>
@@ -392,11 +426,11 @@ export function DashboardPage() {
                 </div>
                 <div style={styles.inputGroup}>
                     <label style={styles.label}>Profissão</label>
-                    <input style={styles.input} value={patient.profession || ''} onChange={e => setPatient({...patient, profession: e.target.value})} disabled={!isEditMode && isUpdating} />
+                    <input style={styles.input} value={patient.profession || ''} onChange={e => setPatient({ ...patient, profession: e.target.value })} disabled={!isEditMode && isUpdating} />
                 </div>
                 <div style={styles.inputGroup}>
                     <label style={styles.label}>País de Residência</label>
-                    <input style={styles.input} value={patient.countryOfResidence || ''} onChange={e => setPatient({...patient, countryOfResidence: e.target.value})} disabled={!isEditMode && isUpdating} />
+                    <input style={styles.input} value={patient.countryOfResidence || ''} onChange={e => setPatient({ ...patient, countryOfResidence: e.target.value })} disabled={!isEditMode && isUpdating} />
                 </div>
             </div>
 
@@ -404,11 +438,11 @@ export function DashboardPage() {
             <div style={styles.formGrid}>
                 <div style={styles.inputGroup}>
                     <label style={styles.label}>Início do Tratamento{(!isEditMode && isUpdating) ? '' : ' *'}</label>
-                    <input type="date" required style={styles.input} value={patient.treatmentStartDate} onChange={e => setPatient({...patient, treatmentStartDate: e.target.value})} disabled={!isEditMode && isUpdating} />
+                    <input type="date" required max={todayString} style={styles.input} value={patient.treatmentStartDate} onChange={e => setPatient({ ...patient, treatmentStartDate: e.target.value })} disabled={!isEditMode && isUpdating} />
                 </div>
                 <div style={styles.inputGroup}>
                     <label style={styles.label}>Frequência</label>
-                    <select style={styles.input} value={patient.frequency} onChange={e => setPatient({...patient, frequency: Number(e.target.value) as PatientFrequency})} disabled={!isEditMode && isUpdating}>
+                    <select style={styles.input} value={patient.frequency} onChange={e => setPatient({ ...patient, frequency: Number(e.target.value) as PatientFrequency })} disabled={!isEditMode && isUpdating}>
                         <option value={PatientFrequency.Weekly}>Semanal</option>
                         <option value={PatientFrequency.BiWeekly}>Quinzenal</option>
                         <option value={PatientFrequency.Monthly}>Mensal</option>
@@ -422,10 +456,10 @@ export function DashboardPage() {
                     <label style={styles.label}>Tipo de Pagamento{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                     <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', justifyContent: 'center' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
-                            <input 
+                            <input
                                 required
-                                type="radio" 
-                                name="paymentType" 
+                                type="radio"
+                                name="paymentType"
                                 value={PaymentType.PerSession}
                                 checked={patient.paymentType === PaymentType.PerSession}
                                 onChange={() => setPatient({ ...patient, paymentType: PaymentType.PerSession, packageType: undefined })}
@@ -434,10 +468,10 @@ export function DashboardPage() {
                             Por sessão
                         </label>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
-                            <input 
+                            <input
                                 required
-                                type="radio" 
-                                name="paymentType" 
+                                type="radio"
+                                name="paymentType"
                                 value={PaymentType.Package}
                                 checked={patient.paymentType === PaymentType.Package}
                                 onChange={() => setPatient({ ...patient, paymentType: PaymentType.Package })}
@@ -453,11 +487,11 @@ export function DashboardPage() {
                 <div style={styles.formGrid}>
                     <div style={styles.inputGroup}>
                         <label style={styles.label}>Moeda{(!isEditMode && isUpdating) ? '' : ' *'}</label>
-                        <select 
+                        <select
                             required
-                            style={styles.input} 
-                            value={patient.currency || Currency.BRL} 
-                            onChange={e => setPatient({...patient, currency: Number(e.target.value) as Currency})} 
+                            style={styles.input}
+                            value={patient.currency || Currency.BRL}
+                            onChange={e => setPatient({ ...patient, currency: Number(e.target.value) as Currency })}
                             disabled={!isEditMode && isUpdating}
                         >
                             <option value={Currency.BRL}>BRL (R$)</option>
@@ -467,22 +501,22 @@ export function DashboardPage() {
                     </div>
                     <div style={styles.inputGroup}>
                         <label style={styles.label}>Valor da sessão{(!isEditMode && isUpdating) ? '' : ' *'}</label>
-                        <input 
+                        <input
                             required
-                            style={styles.input} 
+                            style={styles.input}
                             value={patient.sessionPrice !== undefined ? formatCurrency(patient.sessionPrice, patient.currency || Currency.BRL) : ''}
-                            onChange={e => setPatient({...patient, sessionPrice: parseCurrency(e.target.value)})} 
-                            disabled={!isEditMode && isUpdating} 
+                            onChange={e => setPatient({ ...patient, sessionPrice: parseCurrency(e.target.value) })}
+                            disabled={!isEditMode && isUpdating}
                             placeholder="0,00"
                         />
                     </div>
                     <div style={styles.inputGroup}>
                         <label style={styles.label}>Meio de pagamento{(!isEditMode && isUpdating) ? '' : ' *'}</label>
-                        <select 
+                        <select
                             required
-                            style={styles.input} 
-                            value={patient.paymentMethod || ''} 
-                            onChange={e => setPatient({...patient, paymentMethod: Number(e.target.value) as PaymentMethod})} 
+                            style={styles.input}
+                            value={patient.paymentMethod || ''}
+                            onChange={e => setPatient({ ...patient, paymentMethod: Number(e.target.value) as PaymentMethod })}
                             disabled={!isEditMode && isUpdating}
                         >
                             <option value="">Selecione...</option>
@@ -502,10 +536,10 @@ export function DashboardPage() {
                             <label style={styles.label}>Tipo de Pacote{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                             <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', justifyContent: 'center' }}>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
-                                    <input 
+                                    <input
                                         required
-                                        type="radio" 
-                                        name="packageType" 
+                                        type="radio"
+                                        name="packageType"
                                         value={PackageType.Monthly}
                                         checked={patient.packageType === PackageType.Monthly}
                                         onChange={() => setPatient({ ...patient, packageType: PackageType.Monthly, sessionQuantity: undefined })}
@@ -514,10 +548,10 @@ export function DashboardPage() {
                                     Mensal
                                 </label>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
-                                    <input 
+                                    <input
                                         required
-                                        type="radio" 
-                                        name="packageType" 
+                                        type="radio"
+                                        name="packageType"
                                         value={PackageType.PerSessions}
                                         checked={patient.packageType === PackageType.PerSessions}
                                         onChange={() => setPatient({ ...patient, packageType: PackageType.PerSessions, billingStartDateType: undefined, customBillingDate: undefined })}
@@ -535,10 +569,10 @@ export function DashboardPage() {
                                 <label style={styles.label}>Início da cobrança{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                                 <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', justifyContent: 'center' }}>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
-                                        <input 
+                                        <input
                                             required
-                                            type="radio" 
-                                            name="billingStartDateType" 
+                                            type="radio"
+                                            name="billingStartDateType"
                                             value={BillingStartDateType.CurrentMonth}
                                             checked={patient.billingStartDateType === BillingStartDateType.CurrentMonth}
                                             onChange={() => setPatient({ ...patient, billingStartDateType: BillingStartDateType.CurrentMonth, customBillingDate: undefined })}
@@ -547,10 +581,10 @@ export function DashboardPage() {
                                         Mês atual
                                     </label>
                                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
-                                        <input 
+                                        <input
                                             required
-                                            type="radio" 
-                                            name="billingStartDateType" 
+                                            type="radio"
+                                            name="billingStartDateType"
                                             value={BillingStartDateType.CustomDate}
                                             checked={patient.billingStartDateType === BillingStartDateType.CustomDate}
                                             onChange={() => setPatient({ ...patient, billingStartDateType: BillingStartDateType.CustomDate })}
@@ -560,16 +594,16 @@ export function DashboardPage() {
                                     </label>
                                 </div>
                             </div>
-                            
+
                             {patient.billingStartDateType === BillingStartDateType.CustomDate && (
                                 <div style={styles.inputGroup}>
                                     <label style={styles.label}>Data da cobrança{(!isEditMode && isUpdating) ? '' : ' *'}</label>
-                                    <input 
+                                    <input
                                         required
                                         type="date"
-                                        style={styles.input} 
-                                        value={patient.customBillingDate || ''} 
-                                        onChange={e => setPatient({...patient, customBillingDate: e.target.value})} 
+                                        style={styles.input}
+                                        value={patient.customBillingDate || ''}
+                                        onChange={e => setPatient({ ...patient, customBillingDate: e.target.value })}
                                         disabled={!isEditMode && isUpdating}
                                     />
                                 </div>
@@ -577,11 +611,11 @@ export function DashboardPage() {
 
                             <div style={styles.inputGroup}>
                                 <label style={styles.label}>Moeda{(!isEditMode && isUpdating) ? '' : ' *'}</label>
-                                <select 
+                                <select
                                     required
-                                    style={styles.input} 
-                                    value={patient.currency || Currency.BRL} 
-                                    onChange={e => setPatient({...patient, currency: Number(e.target.value) as Currency})} 
+                                    style={styles.input}
+                                    value={patient.currency || Currency.BRL}
+                                    onChange={e => setPatient({ ...patient, currency: Number(e.target.value) as Currency })}
                                     disabled={!isEditMode && isUpdating}
                                 >
                                     <option value={Currency.BRL}>BRL (R$)</option>
@@ -591,22 +625,22 @@ export function DashboardPage() {
                             </div>
                             <div style={styles.inputGroup}>
                                 <label style={styles.label}>Valor{(!isEditMode && isUpdating) ? '' : ' *'}</label>
-                                <input 
+                                <input
                                     required
-                                    style={styles.input} 
+                                    style={styles.input}
                                     value={patient.sessionPrice !== undefined ? formatCurrency(patient.sessionPrice, patient.currency || Currency.BRL) : ''}
-                                    onChange={e => setPatient({...patient, sessionPrice: parseCurrency(e.target.value)})} 
-                                    disabled={!isEditMode && isUpdating} 
+                                    onChange={e => setPatient({ ...patient, sessionPrice: parseCurrency(e.target.value) })}
+                                    disabled={!isEditMode && isUpdating}
                                     placeholder="0,00"
                                 />
                             </div>
                             <div style={styles.inputGroup}>
                                 <label style={styles.label}>Meio de pagamento{(!isEditMode && isUpdating) ? '' : ' *'}</label>
-                                <select 
+                                <select
                                     required
-                                    style={styles.input} 
-                                    value={patient.paymentMethod || ''} 
-                                    onChange={e => setPatient({...patient, paymentMethod: Number(e.target.value) as PaymentMethod})} 
+                                    style={styles.input}
+                                    value={patient.paymentMethod || ''}
+                                    onChange={e => setPatient({ ...patient, paymentMethod: Number(e.target.value) as PaymentMethod })}
                                     disabled={!isEditMode && isUpdating}
                                 >
                                     <option value="">Selecione...</option>
@@ -623,11 +657,11 @@ export function DashboardPage() {
                         <div style={styles.formGrid}>
                             <div style={styles.inputGroup}>
                                 <label style={styles.label}>Moeda{(!isEditMode && isUpdating) ? '' : ' *'}</label>
-                                <select 
+                                <select
                                     required
-                                    style={styles.input} 
-                                    value={patient.currency || Currency.BRL} 
-                                    onChange={e => setPatient({...patient, currency: Number(e.target.value) as Currency})} 
+                                    style={styles.input}
+                                    value={patient.currency || Currency.BRL}
+                                    onChange={e => setPatient({ ...patient, currency: Number(e.target.value) as Currency })}
                                     disabled={!isEditMode && isUpdating}
                                 >
                                     <option value={Currency.BRL}>BRL (R$)</option>
@@ -637,35 +671,35 @@ export function DashboardPage() {
                             </div>
                             <div style={styles.inputGroup}>
                                 <label style={styles.label}>Valor{(!isEditMode && isUpdating) ? '' : ' *'}</label>
-                                <input 
+                                <input
                                     required
-                                    style={styles.input} 
+                                    style={styles.input}
                                     value={patient.sessionPrice !== undefined ? formatCurrency(patient.sessionPrice, patient.currency || Currency.BRL) : ''}
-                                    onChange={e => setPatient({...patient, sessionPrice: parseCurrency(e.target.value)})} 
-                                    disabled={!isEditMode && isUpdating} 
+                                    onChange={e => setPatient({ ...patient, sessionPrice: parseCurrency(e.target.value) })}
+                                    disabled={!isEditMode && isUpdating}
                                     placeholder="0,00"
                                 />
                             </div>
                             <div style={styles.inputGroup}>
                                 <label style={styles.label}>Quantidade de sessões{(!isEditMode && isUpdating) ? '' : ' *'}</label>
-                                <input 
+                                <input
                                     required
                                     type="number"
                                     min="1"
-                                    style={styles.input} 
+                                    style={styles.input}
                                     value={patient.sessionQuantity || ''}
-                                    onChange={e => setPatient({...patient, sessionQuantity: parseInt(e.target.value, 10)})} 
-                                    disabled={!isEditMode && isUpdating} 
+                                    onChange={e => setPatient({ ...patient, sessionQuantity: parseInt(e.target.value, 10) })}
+                                    disabled={!isEditMode && isUpdating}
                                     placeholder="Ex: 4"
                                 />
                             </div>
                             <div style={styles.inputGroup}>
                                 <label style={styles.label}>Meio de pagamento{(!isEditMode && isUpdating) ? '' : ' *'}</label>
-                                <select 
+                                <select
                                     required
-                                    style={styles.input} 
-                                    value={patient.paymentMethod || ''} 
-                                    onChange={e => setPatient({...patient, paymentMethod: Number(e.target.value) as PaymentMethod})} 
+                                    style={styles.input}
+                                    value={patient.paymentMethod || ''}
+                                    onChange={e => setPatient({ ...patient, paymentMethod: Number(e.target.value) as PaymentMethod })}
                                     disabled={!isEditMode && isUpdating}
                                 >
                                     <option value="">Selecione...</option>
@@ -692,7 +726,7 @@ export function DashboardPage() {
                                 </div>
                                 <div style={styles.inputGroup}>
                                     <label style={styles.label}>Telefone{(!isEditMode && isUpdating) ? '' : ' *'}</label>
-                                    <input required style={styles.input} value={contact.phoneNumber} onChange={e => handleEmergencyContactChange(index, 'phoneNumber', formatPhone(e.target.value), isUpdating)} disabled={!isEditMode && isUpdating} placeholder="(11) 99999-9999" />
+                                    <input required style={styles.input} value={contact.phoneNumber} onChange={e => handleEmergencyContactChange(index, 'phoneNumber', e.target.value, isUpdating)} disabled={!isEditMode && isUpdating} placeholder="(11) 99999-9999 ou +1..." />
                                 </div>
                                 <div style={styles.inputGroup}>
                                     <label style={styles.label}>Tipo</label>
@@ -737,7 +771,6 @@ export function DashboardPage() {
                 <div style={styles.logo}>PsiAngel</div>
                 <div style={styles.navLinks}>
                     <span style={styles.activeNavLink}>Pacientes</span>
-                    <span style={styles.navLink}>Agendamentos</span>
                 </div>
                 <div style={styles.userProfile}>
                     {user && (
@@ -752,7 +785,6 @@ export function DashboardPage() {
             </header>
 
             <main style={styles.mainContent}>
-                {/* Lado Esquerdo: Pacientes */}
                 <section style={styles.leftPane}>
                     <div style={styles.searchSection}>
                         <input
@@ -766,9 +798,9 @@ export function DashboardPage() {
                             }}
                         />
                         <div style={styles.sortContainer}>
-                            <select 
-                                style={styles.sortSelect} 
-                                value={sortBy} 
+                            <select
+                                style={styles.sortSelect}
+                                value={sortBy}
                                 onChange={e => {
                                     setSortBy(e.target.value as 'date' | 'name');
                                     setCurrentPage(1);
@@ -777,38 +809,33 @@ export function DashboardPage() {
                                 <option value="date">Início tratamento</option>
                                 <option value="name">Nome</option>
                             </select>
-                            <button 
+                            <button
                                 type="button"
-                                style={styles.sortDirectionBtn} 
+                                style={styles.sortDirectionBtn}
                                 onClick={() => {
                                     setSortDesc(!sortDesc);
                                     setCurrentPage(1);
                                 }}
                                 title={sortDesc ? "Ordem Decrescente" : "Ordem Crescente"}
                             >
-                                <svg 
-                                    width="24" 
-                                    height="24" 
-                                    viewBox="0 0 24 24" 
-                                    fill="none" 
-                                    stroke="currentColor" 
-                                    strokeWidth="2" 
-                                    strokeLinecap="round" 
+                                <svg
+                                    width="24"
+                                    height="24"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
                                     strokeLinejoin="round"
                                     style={{
                                         transform: sortDesc ? 'rotate(180deg)' : 'none',
                                         transition: 'transform 0.3s ease'
                                     }}
                                 >
-                                    <path d="M12 19V5M5 12l7-7 7 7"/>
+                                    <path d="M12 19V5M5 12l7-7 7 7" />
                                 </svg>
                             </button>
                         </div>
-                    </div>
-
-                    <div style={styles.listControls}>
-                        <button style={styles.filterChip}>🎂 Aniversariantes</button>
-                        <button style={styles.filterChip}>👤 Ativos</button>
                     </div>
 
                     <div style={styles.actionButtons}>
@@ -823,7 +850,7 @@ export function DashboardPage() {
                         ) : filteredPatients.length > 0 ? (
                             <div style={styles.patientList}>
                                 {filteredPatients.map(p => (
-                                    <div key={p.id} style={{...styles.patientCard, cursor: 'pointer'}} onClick={() => openViewModal(p)}>
+                                    <div key={p.id} style={{ ...styles.patientCard, cursor: 'pointer' }} onClick={() => openViewModal(p)}>
                                         <div style={styles.patientAvatar}>{p.fullName.charAt(0).toUpperCase()}</div>
                                         <div style={styles.patientInfo}>
                                             <div style={styles.patientName}>{p.socialName || p.fullName}</div>
@@ -845,12 +872,12 @@ export function DashboardPage() {
                                 </button>
                             </div>
                         )}
-                        
+
                         {/* Pagination Controls */}
                         {totalPages > 1 && (
                             <div style={styles.paginationContainer}>
-                                <button 
-                                    style={currentPage === 1 ? styles.paginationBtnDisabled : styles.paginationBtn} 
+                                <button
+                                    style={currentPage === 1 ? styles.paginationBtnDisabled : styles.paginationBtn}
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                     disabled={currentPage === 1}
                                 >
@@ -859,8 +886,8 @@ export function DashboardPage() {
                                 <span style={styles.paginationText}>
                                     Página {currentPage} de {totalPages} ({totalItems} pacientes)
                                 </span>
-                                <button 
-                                    style={currentPage === totalPages ? styles.paginationBtnDisabled : styles.paginationBtn} 
+                                <button
+                                    style={currentPage === totalPages ? styles.paginationBtnDisabled : styles.paginationBtn}
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                     disabled={currentPage === totalPages}
                                 >
@@ -910,12 +937,12 @@ export function DashboardPage() {
                         <div style={styles.modalHeader}>
                             <h2 style={{ ...styles.modalTitle, marginBottom: 0 }}>Adicionar Novo Paciente</h2>
                             <button type="button" onClick={() => setIsModalOpen(false)} style={styles.iconActionBtn} title="Fechar">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                             </button>
                         </div>
                         <form onSubmit={handleAddPatient} style={styles.modalForm}>
                             {renderPatientFormFields(newPatient, setNewPatient, false)}
-                            
+
                             <div style={{ ...styles.modalActions, justifyContent: 'flex-end', marginTop: '2rem' }}>
                                 <button type="submit" style={styles.saveBtn}>Salvar Paciente</button>
                             </div>
@@ -932,24 +959,24 @@ export function DashboardPage() {
                             <h2 style={{ ...styles.modalTitle, marginBottom: 0 }}>{isEditMode ? 'Editar Paciente' : 'Detalhes do Paciente'}</h2>
                             <div style={{ display: 'flex', gap: '0.5rem' }}>
                                 <button type="button" onClick={handleDeletePatient} style={styles.iconActionBtn} title="Excluir">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
                                 </button>
                                 <button type="button" onClick={() => setIsEditMode(!isEditMode)} style={styles.iconActionBtn} title={isEditMode ? 'Cancelar Edição' : 'Editar'}>
                                     {isEditMode ? (
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6" /><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" /></svg>
                                     ) : (
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
                                     )}
                                 </button>
                                 <button type="button" onClick={() => { setIsViewModalOpen(false); setIsEditMode(false); }} style={styles.iconActionBtn} title="Fechar">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                                 </button>
                             </div>
                         </div>
-                        
+
                         <form onSubmit={handleUpdatePatient} style={styles.modalForm}>
                             {renderPatientFormFields(selectedPatient, setSelectedPatient, true)}
-                            
+
                             {isEditMode && (
                                 <div style={{ ...styles.modalActions, justifyContent: 'flex-end', marginTop: '2rem' }}>
                                     <button type="submit" style={styles.saveBtn}>Salvar Alterações</button>

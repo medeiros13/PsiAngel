@@ -59,6 +59,58 @@ public class PatientController : ControllerBase
         return null;
     }
 
+    private async Task<string?> ValidateCpfAsync(string? cpf, Guid psychologistId, Guid? patientId = null)
+    {
+        if (string.IsNullOrWhiteSpace(cpf)) return null;
+        
+        cpf = new string(cpf.Where(char.IsDigit).ToArray());
+        
+        if (!IsValidCpf(cpf)) return "O CPF informado é inválido.";
+
+        var exists = await _db.Patients.AnyAsync(p => p.PsychologistId == psychologistId && p.Cpf == cpf && (patientId == null || p.Id != patientId));
+        if (exists) return "Este CPF já está cadastrado para outro paciente seu.";
+
+        return null;
+    }
+
+    private static bool IsValidCpf(string cpf)
+    {
+        if (cpf.Length != 11) return false;
+        
+        if (cpf.Distinct().Count() == 1) return false;
+
+        int[] multiplier1 = new int[9] { 10, 9, 8, 7, 6, 5, 4, 3, 2 };
+        int[] multiplier2 = new int[10] { 11, 10, 9, 8, 7, 6, 5, 4, 3, 2 };
+
+        string tempCpf = cpf.Substring(0, 9);
+        int sum = 0;
+
+        for (int i = 0; i < 9; i++)
+            sum += int.Parse(tempCpf[i].ToString()) * multiplier1[i];
+
+        int remainder = sum % 11;
+        if (remainder < 2)
+            remainder = 0;
+        else
+            remainder = 11 - remainder;
+
+        string digit = remainder.ToString();
+        tempCpf = tempCpf + digit;
+        sum = 0;
+
+        for (int i = 0; i < 10; i++)
+            sum += int.Parse(tempCpf[i].ToString()) * multiplier2[i];
+
+        remainder = sum % 11;
+        if (remainder < 2)
+            remainder = 0;
+        else
+            remainder = 11 - remainder;
+
+        digit = digit + remainder.ToString();
+        return cpf.EndsWith(digit);
+    }
+
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<Patient>>> GetPatients([FromQuery] int page = 1, [FromQuery] int limit = 10, [FromQuery] string? search = null, [FromQuery] string sortBy = "date", [FromQuery] bool sortDesc = true)
     {
@@ -124,8 +176,15 @@ public class PatientController : ControllerBase
         var validationError = ValidateGestaoFinanceira(patient);
         if (validationError != null) return BadRequest(new { message = validationError });
 
+        var psychologistId = GetPsychologistId();
+        var cpfError = await ValidateCpfAsync(patient.Cpf, psychologistId);
+        if (cpfError != null) return BadRequest(new { message = cpfError });
+
+        if (!string.IsNullOrWhiteSpace(patient.Cpf)) 
+            patient.Cpf = new string(patient.Cpf.Where(char.IsDigit).ToArray());
+
         patient.Id = Guid.NewGuid();
-        patient.PsychologistId = GetPsychologistId();
+        patient.PsychologistId = psychologistId;
 
         patient.TreatmentStartDate = patient.TreatmentStartDate.ToUniversalTime();
         patient.DateOfBirth = patient.DateOfBirth.ToUniversalTime();
@@ -156,6 +215,12 @@ public class PatientController : ControllerBase
         if (validationError != null) return BadRequest(new { message = validationError });
 
         var psychologistId = GetPsychologistId();
+        var cpfError = await ValidateCpfAsync(inputPatient.Cpf, psychologistId, id);
+        if (cpfError != null) return BadRequest(new { message = cpfError });
+
+        if (!string.IsNullOrWhiteSpace(inputPatient.Cpf)) 
+            inputPatient.Cpf = new string(inputPatient.Cpf.Where(char.IsDigit).ToArray());
+
         var patient = await _db.Patients
             .Include(p => p.EmergencyContacts)
             .FirstOrDefaultAsync(p => p.Id == id && p.PsychologistId == psychologistId);
