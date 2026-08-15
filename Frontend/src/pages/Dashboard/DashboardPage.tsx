@@ -862,12 +862,16 @@ export function DashboardPage() {
             {isModalOpen && (
                 <div style={styles.modalOverlay} onClick={() => setIsModalOpen(false)}>
                     <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
-                        <h2 style={styles.modalTitle}>Adicionar Novo Paciente</h2>
+                        <div style={styles.modalHeader}>
+                            <h2 style={{ ...styles.modalTitle, marginBottom: 0 }}>Adicionar Novo Paciente</h2>
+                            <button type="button" onClick={() => setIsModalOpen(false)} style={styles.iconActionBtn} title="Fechar">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </div>
                         <form onSubmit={handleAddPatient} style={styles.modalForm}>
                             {renderPatientFormFields(newPatient, setNewPatient, false)}
                             
-                            <div style={styles.modalActions}>
-                                <button type="button" onClick={() => setIsModalOpen(false)} style={styles.cancelBtn}>Cancelar</button>
+                            <div style={{ ...styles.modalActions, justifyContent: 'flex-end', marginTop: '2rem' }}>
                                 <button type="submit" style={styles.saveBtn}>Salvar Paciente</button>
                             </div>
                         </form>
@@ -881,21 +885,31 @@ export function DashboardPage() {
                     <div style={styles.modalContent} onClick={e => e.stopPropagation()}>
                         <div style={styles.modalHeader}>
                             <h2 style={{ ...styles.modalTitle, marginBottom: 0 }}>{isEditMode ? 'Editar Paciente' : 'Detalhes do Paciente'}</h2>
-                            <button type="button" onClick={() => setIsEditMode(!isEditMode)} style={styles.editToggleBtn}>
-                                {isEditMode ? 'Cancelar Edição' : 'Editar'}
-                            </button>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button type="button" onClick={handleDeletePatient} style={styles.iconActionBtn} title="Excluir">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                </button>
+                                <button type="button" onClick={() => setIsEditMode(!isEditMode)} style={styles.iconActionBtn} title={isEditMode ? 'Cancelar Edição' : 'Editar'}>
+                                    {isEditMode ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+                                    ) : (
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                                    )}
+                                </button>
+                                <button type="button" onClick={() => { setIsViewModalOpen(false); setIsEditMode(false); }} style={styles.iconActionBtn} title="Fechar">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </button>
+                            </div>
                         </div>
                         
                         <form onSubmit={handleUpdatePatient} style={styles.modalForm}>
                             {renderPatientFormFields(selectedPatient, setSelectedPatient, true)}
                             
-                            <div style={{ ...styles.modalActions, justifyContent: 'space-between', marginTop: '2rem' }}>
-                                <button type="button" onClick={handleDeletePatient} style={styles.deleteBtn}>Excluir Paciente</button>
-                                <div style={{ display: 'flex', gap: '1rem' }}>
-                                    <button type="button" onClick={() => { setIsViewModalOpen(false); setIsEditMode(false); }} style={styles.cancelBtn}>Fechar</button>
-                                    {isEditMode && <button type="submit" style={styles.saveBtn}>Salvar Alterações</button>}
+                            {isEditMode && (
+                                <div style={{ ...styles.modalActions, justifyContent: 'flex-end', marginTop: '2rem' }}>
+                                    <button type="submit" style={styles.saveBtn}>Salvar Alterações</button>
                                 </div>
-                            </div>
+                            )}
                         </form>
                     </div>
                 </div>
@@ -1375,6 +1389,19 @@ const styles = {
         justifyContent: 'flex-end',
         gap: '1rem',
         marginTop: '2rem',
+    },
+    iconActionBtn: {
+        width: '40px',
+        height: '40px',
+        borderRadius: '50%',
+        border: '1px solid var(--color-pink-light-1)',
+        background: 'var(--color-pink-baby)',
+        color: 'var(--color-primary)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        transition: 'all 0.2s',
     },
     cancelBtn: {
         padding: '0.8rem 1.5rem',
