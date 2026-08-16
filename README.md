@@ -2,6 +2,20 @@
 
 PsiAngel é um sistema de Gestão de Pacientes voltado para psicólogos, projetado para auxiliar na administração de sessões, perfis de pacientes e integração de autenticação simplificada através do Google.
 
+## ✨ Funcionalidades
+
+- **Autenticação Segura e Intuitiva:** 
+  - Login rápido e seguro utilizando integração com o Google (OAuth 2.0).
+  - Fluxo de logout simplificado e intuitivo.
+- **Gestão de Pacientes:**
+  - Cadastro completo de pacientes com informações pessoais e clínicas.
+  - Validações cadastrais rigorosas, garantindo a integridade e precisão dos dados informados no sistema.
+  - Listagem, visualização de prontuários e edição de perfis de pacientes de forma eficiente e centralizada.
+- **Design Moderno:** Interface de usuário interativa, agradável e totalmente responsiva.
+- **Segurança e Privacidade:** Comunicação criptografada via HTTPS em todo o projeto, e proteção de rotas através de autenticação por JWT (JSON Web Tokens).
+
+---
+
 ## 🛠️ Especificações Técnicas (Tech Stack)
 
 O projeto é dividido em duas aplicações principais (Backend e Frontend), conteinerizadas utilizando Docker.
@@ -97,6 +111,28 @@ Os seguintes serviços serão iniciados:
 - **Frontend:** Abra seu navegador e acesse [https://localhost:5173](https://localhost:5173). 
   *(Obs: Como é um certificado local de desenvolvimento, o navegador exibirá um alerta de "Conexão não segura". Clique em Avançado > Continuar / Ir para localhost para ignorar esse aviso).*
 - **Backend API (Swagger/Scalar):** Acesse [https://localhost:5001/scalar](https://localhost:5001/scalar) para visualizar a documentação interativa da API.
+
+---
+
+## 🧪 Testes Automatizados
+
+O projeto conta com testes automatizados para garantir a integridade e qualidade do código.
+
+### Backend (xUnit & Moq)
+Os testes do backend estão localizados na pasta `/Backend.Tests`. Para executá-los, utilize:
+```powershell
+cd Backend.Tests
+dotnet test
+```
+
+### Frontend (Vitest & React Testing Library)
+Os testes do frontend utilizam o Vitest. O projeto utiliza o `bun` como gerenciador de pacotes. Para executá-los, utilize:
+```powershell
+cd Frontend
+bun run test
+# ou para abrir a interface gráfica do Vitest:
+bun run test:ui
+```
 
 ---
 
