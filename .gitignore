@@ -12,3 +12,8 @@
 *.log
 
 skill.md
+
+# Ignorar pastas de build do .NET (para o Backend.Tests e outros)
+[Bb]in/
+[Oo]bj/
+TestResults/
