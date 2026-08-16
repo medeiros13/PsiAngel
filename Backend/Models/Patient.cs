@@ -27,4 +27,14 @@ public class Patient
     public Guid PsychologistId { get; set; }
     [JsonIgnore]
     public Psychologist? Psychologist { get; set; }
+
+    // Gestão Financeira
+    public PaymentType? PaymentType { get; set; }
+    public Currency? Currency { get; set; }
+    public decimal? SessionPrice { get; set; }
+    public PaymentMethod? PaymentMethod { get; set; }
+    public PackageType? PackageType { get; set; }
+    public BillingStartDateType? BillingStartDateType { get; set; }
+    public DateTime? CustomBillingDate { get; set; }
+    public int? SessionQuantity { get; set; }
 }

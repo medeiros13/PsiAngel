@@ -1,3 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Sacramento&display=swap');
+
+@font-face {
+  font-family: 'Quaaykop';
+  src: url('./assets/fonts/Quaaykop-vmWLZ-BF64c86b822d416.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Quaaykop';
+  src: url('./assets/fonts/QuaaykopMedium-2OxRW-BF64c86b821cce3.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Quaaykop';
+  src: url('./assets/fonts/QuaaykopBold-rgo9x-BF64c86b822d5ba.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Sarabun';
+  src: url('./assets/fonts/Sarabun-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Sarabun';
+  src: url('./assets/fonts/Sarabun-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Sarabun';
+  src: url('./assets/fonts/Sarabun-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Sarabun';
+  src: url('./assets/fonts/Sarabun-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+}
+
 :root {
   --text: #6b6375;
   --text-h: #08060d;
@@ -11,8 +56,24 @@
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  /* Brand Colors */
+  --color-dark-blue-1: #142645;
+  --color-dark-blue-2: #0e315f;
+  --color-magenta: #dd4e77;
+  --color-pink-medium: #ff7a8a;
+  --color-pink-light-1: #e9afad;
+  --color-pink-light-2: #f3d0d0;
+  --color-pink-baby: #f4e1e1;
+
+  --color-primary: var(--color-dark-blue-1);
+  --color-secondary: var(--color-magenta);
+  --color-background: var(--color-pink-baby);
+  --color-text: var(--color-dark-blue-1);
+
+  /* Brand Typography */
+  --sans: 'Sarabun', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: 'Quaaykop', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --casual: 'Sacramento', cursive;
   --mono: ui-monospace, Consolas, monospace;
 
   font: 18px/145% var(--sans);

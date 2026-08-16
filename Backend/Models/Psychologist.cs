@@ -1,4 +1,4 @@
-﻿namespace Backend.Models
+namespace Backend.Models
 {
     public class Psychologist
     {
@@ -13,6 +13,7 @@
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public bool IsActive { get; set; }
+        public ICollection<Patient> Patients { get; set; } = [];
         public Psychologist() { }
 
         public Psychologist(string name, string email, string googleAccountId, string? pictureUrl)
