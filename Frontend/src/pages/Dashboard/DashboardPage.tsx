@@ -108,7 +108,7 @@ const emptyPatient: Patient = {
     countryOfResidence: '',
     frequency: PatientFrequency.Weekly,
     emergencyContacts: [],
-    currency: Currency.BRL, // Padrão BRL
+    currency: Currency.BRL,
     paymentType: PaymentType.PerSession,
     paymentMethod: PaymentMethod.Pix
 };
@@ -158,7 +158,6 @@ const formatCurrency = (value: number | undefined, currency: Currency | undefine
     } else if (currency === Currency.EUR) {
         return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
     }
-    // Default BRL
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 };
 
@@ -416,14 +415,14 @@ export function DashboardPage() {
     // Reusable Form Fields component to avoid duplication between Create and Edit modals
     const renderPatientFormFields = (patient: Patient, setPatient: (p: Patient) => void, isUpdating: boolean) => (
         <>
-            <h3 style={styles.sectionTitle}>Dados Pessoais</h3>
+            <h3 style={styles.sectionTitle}>Dados pessoais</h3>
             <div style={styles.formGrid}>
                 <div style={styles.inputGroup}>
-                    <label style={styles.label}>Nome Completo{(!isEditMode && isUpdating) ? '' : ' *'}</label>
+                    <label style={styles.label}>Nome completo{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                     <input required style={styles.input} value={patient.fullName} onChange={e => setPatient({ ...patient, fullName: e.target.value })} disabled={!isEditMode && isUpdating} />
                 </div>
                 <div style={styles.inputGroup}>
-                    <label style={styles.label}>Nome Social</label>
+                    <label style={styles.label}>Nome social</label>
                     <input style={styles.input} value={patient.socialName || ''} onChange={e => setPatient({ ...patient, socialName: e.target.value })} disabled={!isEditMode && isUpdating} />
                 </div>
                 <div style={styles.inputGroup}>
@@ -435,7 +434,7 @@ export function DashboardPage() {
                     <input required style={styles.input} value={patient.phoneNumber} onChange={e => setPatient({ ...patient, phoneNumber: e.target.value })} disabled={!isEditMode && isUpdating} placeholder="(11) 99999-9999 ou +1..." />
                 </div>
                 <div style={styles.inputGroup}>
-                    <label style={styles.label}>Data de Nascimento{(!isEditMode && isUpdating) ? '' : ' *'}</label>
+                    <label style={styles.label}>Data de nascimento{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                     <input type="date" required max={todayString} style={styles.input} value={patient.dateOfBirth} onChange={e => setPatient({ ...patient, dateOfBirth: e.target.value })} disabled={!isEditMode && isUpdating} />
                 </div>
                 <div style={styles.inputGroup}>
@@ -455,15 +454,15 @@ export function DashboardPage() {
                     <input style={styles.input} value={patient.profession || ''} onChange={e => setPatient({ ...patient, profession: e.target.value })} disabled={!isEditMode && isUpdating} />
                 </div>
                 <div style={styles.inputGroup}>
-                    <label style={styles.label}>País de Residência</label>
+                    <label style={styles.label}>País de residência</label>
                     <input style={styles.input} value={patient.countryOfResidence || ''} onChange={e => setPatient({ ...patient, countryOfResidence: e.target.value })} disabled={!isEditMode && isUpdating} />
                 </div>
             </div>
 
-            <h3 style={styles.sectionTitle}>Dados do Tratamento</h3>
+            <h3 style={styles.sectionTitle}>Dados do tratamento</h3>
             <div style={styles.formGrid}>
                 <div style={styles.inputGroup}>
-                    <label style={styles.label}>Início do Tratamento{(!isEditMode && isUpdating) ? '' : ' *'}</label>
+                    <label style={styles.label}>Início do tratamento{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                     <input type="date" required max={todayString} style={styles.input} value={patient.treatmentStartDate} onChange={e => setPatient({ ...patient, treatmentStartDate: e.target.value })} disabled={!isEditMode && isUpdating} />
                 </div>
                 <div style={styles.inputGroup}>
@@ -476,10 +475,10 @@ export function DashboardPage() {
                 </div>
             </div>
 
-            <h3 style={styles.sectionTitle}>Gestão Financeira</h3>
+            <h3 style={styles.sectionTitle}>Gestão financeira</h3>
             <div style={{ ...styles.formGrid, gridTemplateColumns: '1fr' }}>
                 <div style={{ ...styles.inputGroup, alignItems: 'center' }}>
-                    <label style={styles.label}>Tipo de Pagamento{(!isEditMode && isUpdating) ? '' : ' *'}</label>
+                    <label style={styles.label}>Tipo de pagamento{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                     <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', justifyContent: 'center' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
                             <input
@@ -500,7 +499,7 @@ export function DashboardPage() {
                                 name="paymentType"
                                 value={PaymentType.Package}
                                 checked={patient.paymentType === PaymentType.Package}
-                                onChange={() => setPatient({ ...patient, paymentType: PaymentType.Package })}
+                                onChange={() => setPatient({ ...patient, paymentType: PaymentType.Package, packageType: PackageType.Monthly, billingStartDateType: BillingStartDateType.CurrentMonth, sessionQuantity: undefined })}
                                 disabled={!isEditMode && isUpdating}
                             />
                             Por pacote
@@ -520,9 +519,9 @@ export function DashboardPage() {
                             onChange={e => setPatient({ ...patient, currency: Number(e.target.value) as Currency })}
                             disabled={!isEditMode && isUpdating}
                         >
-                            <option value={Currency.BRL}>BRL (R$)</option>
-                            <option value={Currency.USD}>USD ($)</option>
-                            <option value={Currency.EUR}>EUR (€)</option>
+                            <option value={Currency.BRL}>Real (R$)</option>
+                            <option value={Currency.USD}>Dólar ($)</option>
+                            <option value={Currency.EUR}>Euro (€)</option>
                         </select>
                     </div>
                     <div style={styles.inputGroup}>
@@ -559,7 +558,7 @@ export function DashboardPage() {
                 <>
                     <div style={{ ...styles.formGrid, gridTemplateColumns: '1fr', marginTop: '1rem' }}>
                         <div style={{ ...styles.inputGroup, alignItems: 'center' }}>
-                            <label style={styles.label}>Tipo de Pacote{(!isEditMode && isUpdating) ? '' : ' *'}</label>
+                            <label style={styles.label}>Tipo de pacote{(!isEditMode && isUpdating) ? '' : ' *'}</label>
                             <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', justifyContent: 'center' }}>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: (!isEditMode && isUpdating) ? 'not-allowed' : 'pointer' }}>
                                     <input
@@ -568,7 +567,7 @@ export function DashboardPage() {
                                         name="packageType"
                                         value={PackageType.Monthly}
                                         checked={patient.packageType === PackageType.Monthly}
-                                        onChange={() => setPatient({ ...patient, packageType: PackageType.Monthly, sessionQuantity: undefined })}
+                                        onChange={() => setPatient({ ...patient, packageType: PackageType.Monthly, billingStartDateType: BillingStartDateType.CurrentMonth, customBillingDate: undefined, sessionQuantity: undefined })}
                                         disabled={!isEditMode && isUpdating}
                                     />
                                     Mensal
@@ -644,9 +643,9 @@ export function DashboardPage() {
                                     onChange={e => setPatient({ ...patient, currency: Number(e.target.value) as Currency })}
                                     disabled={!isEditMode && isUpdating}
                                 >
-                                    <option value={Currency.BRL}>BRL (R$)</option>
-                                    <option value={Currency.USD}>USD ($)</option>
-                                    <option value={Currency.EUR}>EUR (€)</option>
+                                    <option value={Currency.BRL}>Real (R$)</option>
+                                    <option value={Currency.USD}>Dólar ($)</option>
+                                    <option value={Currency.EUR}>Euro (€)</option>
                                 </select>
                             </div>
                             <div style={styles.inputGroup}>
@@ -690,9 +689,9 @@ export function DashboardPage() {
                                     onChange={e => setPatient({ ...patient, currency: Number(e.target.value) as Currency })}
                                     disabled={!isEditMode && isUpdating}
                                 >
-                                    <option value={Currency.BRL}>BRL (R$)</option>
-                                    <option value={Currency.USD}>USD ($)</option>
-                                    <option value={Currency.EUR}>EUR (€)</option>
+                                    <option value={Currency.BRL}>Real (R$)</option>
+                                    <option value={Currency.USD}>Dólar ($)</option>
+                                    <option value={Currency.EUR}>Euro (€)</option>
                                 </select>
                             </div>
                             <div style={styles.inputGroup}>
@@ -742,7 +741,7 @@ export function DashboardPage() {
 
             {(!isUpdating || isEditMode || (patient.emergencyContacts && patient.emergencyContacts.length > 0)) && (
                 <>
-                    <h3 style={styles.sectionTitle}>Contatos de Emergência</h3>
+                    <h3 style={styles.sectionTitle}>Contatos de emergência</h3>
                     {(patient.emergencyContacts || []).map((contact, index) => (
                         <div key={index} style={styles.emergencyContactCard}>
                             <div style={styles.formGrid}>
@@ -759,19 +758,19 @@ export function DashboardPage() {
                                     <select style={styles.input} value={contact.type} onChange={e => handleEmergencyContactChange(index, 'type', Number(e.target.value) as ContactType, isUpdating)} disabled={!isEditMode && isUpdating}>
                                         <option value={ContactType.Primary}>Primário</option>
                                         <option value={ContactType.Secondary}>Secundário</option>
-                                        <option value={ContactType.LegalRepresentative}>Responsável Legal</option>
+                                        <option value={ContactType.LegalRepresentative}>Responsável legal</option>
                                         <option value={ContactType.Psychiatrist}>Psiquiatra</option>
                                         <option value={ContactType.Other}>Outro</option>
                                     </select>
                                 </div>
                             </div>
                             {(!isUpdating || isEditMode) && (
-                                <button type="button" style={styles.removeContactBtn} onClick={() => handleRemoveEmergencyContact(index, isUpdating)}>Remover Contato</button>
+                                <button type="button" style={styles.removeContactBtn} onClick={() => handleRemoveEmergencyContact(index, isUpdating)}>Remover contato</button>
                             )}
                         </div>
                     ))}
                     {(!isUpdating || isEditMode) && (
-                        <button type="button" style={styles.addContactBtn} onClick={() => handleAddEmergencyContact(isUpdating)}>+ Adicionar Contato de Emergência</button>
+                        <button type="button" style={styles.addContactBtn} onClick={() => handleAddEmergencyContact(isUpdating)}>+ Adicionar contato de emergência</button>
                     )}
                 </>
             )}
