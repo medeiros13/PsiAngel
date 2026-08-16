@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../contexts/AuthContext';
+import logoImg from '../../assets/images/simbolo.png';
 
 export const LoginPage: React.FC = () => {
     const authContext = useContext(AuthContext);
@@ -56,6 +57,15 @@ export const LoginPage: React.FC = () => {
                 width: '100%',
                 boxSizing: 'border-box'
             }}>
+                <img 
+                    src={logoImg} 
+                    alt="Logo" 
+                    style={{
+                        width: '80px',
+                        height: 'auto',
+                        marginBottom: '1rem'
+                    }} 
+                />
                 <div style={{
                     fontSize: '2.5rem',
                     fontFamily: 'var(--casual)',

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ENV } from '../../config/env';
 import { AuthContext } from '../../contexts/AuthContext';
+import logoImg from '../../assets/images/simbolo.png';
 
 export const Gender = {
     Male: 1,
@@ -131,16 +132,16 @@ const isValidCpf = (cpf: string) => {
     let sum = 0;
     let remainder;
 
-    for (let i = 1; i <= 9; i++) 
-        sum = sum + parseInt(cpf.substring(i-1, i)) * (11 - i);
+    for (let i = 1; i <= 9; i++)
+        sum = sum + parseInt(cpf.substring(i - 1, i)) * (11 - i);
     remainder = (sum * 10) % 11;
 
     if ((remainder === 10) || (remainder === 11)) remainder = 0;
     if (remainder !== parseInt(cpf.substring(9, 10))) return false;
 
     sum = 0;
-    for (let i = 1; i <= 10; i++) 
-        sum = sum + parseInt(cpf.substring(i-1, i)) * (12 - i);
+    for (let i = 1; i <= 10; i++)
+        sum = sum + parseInt(cpf.substring(i - 1, i)) * (12 - i);
     remainder = (sum * 10) % 11;
 
     if ((remainder === 10) || (remainder === 11)) remainder = 0;
@@ -793,14 +794,17 @@ export function DashboardPage() {
                 }
             `}</style>
             <header style={styles.topBar}>
-                <div style={styles.logo}>PsiAngel</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <img src={logoImg} alt="Logo" style={{ width: '32px', height: 'auto' }} />
+                    <div style={styles.logo}>PsiAngel</div>
+                </div>
                 <div style={styles.navLinks}>
                     <span style={styles.activeNavLink}>Pacientes</span>
                 </div>
                 <div style={styles.userProfile} ref={userMenuRef}>
                     {user && (
-                        <div 
-                            style={{ ...styles.userInfo, cursor: 'pointer' }} 
+                        <div
+                            style={{ ...styles.userInfo, cursor: 'pointer' }}
                             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                         >
                             <span style={styles.userName}>{user.name}</span>
@@ -811,8 +815,8 @@ export function DashboardPage() {
                     )}
                     {isUserMenuOpen && (
                         <div style={styles.userDropdownMenu}>
-                            <button 
-                                style={styles.dropdownItem} 
+                            <button
+                                style={styles.dropdownItem}
                                 onClick={handleLogout}
                                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-pink-light)'}
                                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
