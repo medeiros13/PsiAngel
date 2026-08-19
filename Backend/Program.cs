@@ -9,7 +9,7 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", ".env.local");
+var envPath = Path.Combine(Directory.GetCurrentDirectory(), "..", ".env");
 if (File.Exists(envPath))
 {
     Env.Load(envPath);
@@ -24,11 +24,16 @@ if (string.IsNullOrEmpty(connectionString) || connectionString == "Host=localhos
     var dbUser = Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "postgres";
     var dbPass = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "postgres";
 
-    connectionString = $"Host=localhost;Database={dbName};Username={dbUser};Password={dbPass}";
+    connectionString = $"Host=localhost;Port=5433;Database={dbName};Username={dbUser};Password={dbPass}";
 }
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
+builder.Services.AddScoped<Backend.Interceptors.TenantInterceptor>();
+builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
+{
+    var interceptor = serviceProvider.GetRequiredService<Backend.Interceptors.TenantInterceptor>();
+    options.UseNpgsql(connectionString)
+           .AddInterceptors(interceptor);
+});
 
 builder.Services.AddCors(options =>
 {
@@ -68,6 +73,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             }
         };
     });
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<Backend.Services.ITenantProvider, Backend.Services.TenantProvider>();
 
 builder.Services.AddControllers();
 

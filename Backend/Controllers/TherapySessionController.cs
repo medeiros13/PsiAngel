@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using Backend.Models;
 using Backend.Models.DTOs;
 
 namespace Backend.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/therapy-sessions")]
 public class TherapySessionController : ControllerBase
