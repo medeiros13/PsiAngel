@@ -1,4 +1,4 @@
-﻿using Backend.Helpers;
+using Backend.Helpers;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -26,7 +26,7 @@ namespace Backend.Configurations
             builder.HasIndex(p => p.Email).IsUnique();
             builder.HasIndex(p => p.GoogleAccountId).IsUnique();
 
-            var converter = new EncryptedStringConverter(_encryptionKey);
+            var converter = new AesGcmValueConverter<string>(_encryptionKey);
 
             builder.Property(p => p.GoogleAccessToken).HasConversion(converter).HasMaxLength(2048);
             builder.Property(p => p.GoogleRefreshToken).HasConversion(converter).HasMaxLength(2048);
