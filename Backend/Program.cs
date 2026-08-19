@@ -24,7 +24,7 @@ if (string.IsNullOrEmpty(connectionString) || connectionString == "Host=localhos
     var dbUser = Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "postgres";
     var dbPass = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "postgres";
 
-    connectionString = $"Host=localhost;Database={dbName};Username={dbUser};Password={dbPass}";
+    connectionString = $"Host=localhost;Port=5433;Database={dbName};Username={dbUser};Password={dbPass}";
 }
 
 builder.Services.AddScoped<Backend.Interceptors.TenantInterceptor>();
